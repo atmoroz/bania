@@ -49,38 +49,66 @@
 }
 
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  /* --------------------------------------------------------------------
+     "Vogon Sanctuary" tokens, taken from the Stitch design export.
+     The site is dark only: there is no light theme, so these live in
+     :root rather than in .dark.
+     -------------------------------------------------------------------- */
+
+  /* surfaces, darkest to lightest */
+  --surface-lowest: #0d0f0c;
+  --surface-low: #1a1c19;
+  --surface-container: #1e201d;
+  --surface-high: #292b27;
+  --surface-highest: #333532;
+  --surface-bright: #383a36;
+
+  /* brand accents */
+  --bronze: #e6c097;
+  --bronze-deep: #ad8a65;
+  --sage: #b2cdbd;
+  --sage-deep: #344c40;
+  --fog: #bbcbba;
+
+  /* shadcn contract */
+  --background: #121411;
+  --foreground: #e3e3dd;
+  --card: var(--surface-container);
+  --card-foreground: var(--foreground);
+  --popover: var(--surface-high);
+  --popover-foreground: var(--foreground);
+  --primary: var(--bronze);
+  --primary-foreground: #432b0e;
+  --secondary: var(--sage);
+  --secondary-foreground: #1e352a;
+  --muted: var(--surface-high);
+  --muted-foreground: #d2c4b8;
+  --accent: var(--surface-highest);
+  --accent-foreground: var(--foreground);
+  --destructive: #ffb4ab;
+  --border: #4f453c;
+  --input: #4f453c;
+  --ring: var(--bronze);
+
+  /* The design is explicit: sharp 90-degree corners everywhere. */
+  --radius: 0rem;
+
+  --font-sans: var(--font-manrope);
+  --font-heading: var(--font-playfair);
+
+  --chart-1: var(--bronze);
+  --chart-2: var(--sage);
+  --chart-3: var(--fog);
+  --chart-4: var(--bronze-deep);
+  --chart-5: var(--surface-bright);
+  --sidebar: var(--surface-low);
+  --sidebar-foreground: var(--foreground);
+  --sidebar-primary: var(--bronze);
+  --sidebar-primary-foreground: #432b0e;
+  --sidebar-accent: var(--surface-high);
+  --sidebar-accent-foreground: var(--foreground);
+  --sidebar-border: #4f453c;
+  --sidebar-ring: var(--bronze);
 }
 
 .dark {
@@ -127,4 +155,31 @@
   html {
     @apply font-sans;
   }
+}
+@theme inline {
+  --color-surface-lowest: var(--surface-lowest);
+  --color-surface-low: var(--surface-low);
+  --color-surface-container: var(--surface-container);
+  --color-surface-high: var(--surface-high);
+  --color-surface-highest: var(--surface-highest);
+  --color-bronze: var(--bronze);
+  --color-bronze-deep: var(--bronze-deep);
+  --color-sage: var(--sage);
+  --color-sage-deep: var(--sage-deep);
+}
+
+
+@utility font-display {
+  font-family: var(--font-heading);
+  font-weight: 400;
+}
+
+/* All-caps micro labels with wide tracking, used for section eyebrows
+   and button text. Straight from the design's label-md spec. */
+@utility label-caps {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  line-height: 1rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
 }
