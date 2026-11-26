@@ -1,10 +1,9 @@
-import Image from "next/image";
 import Link from "next/link";
 import { Camera, Check, Clock, Mail, MapPin, Phone } from "lucide-react";
 
 import { getNavigation } from "@/entities/page-block";
 import { getSettings } from "@/entities/settings";
-import { Container } from "@/shared/ui";
+import { Container, LogoMark } from "@/shared/ui";
 
 const etiquette = [
   "Оренда банного простору від 2 годин",
@@ -20,12 +19,10 @@ export async function SiteFooter({ bare = false }: { bare?: boolean } = {}) {
     <footer className="border-bronze/15 bg-surface-lowest mt-auto border-t">
       <Container className="grid gap-12 py-16 md:grid-cols-2 lg:grid-cols-4">
         <div className="lg:col-span-2">
-          <Image
-            src="/images/logo.png"
-            alt={`Емблема банного комплексу «${settings.site_title}»`}
-            width={112}
-            height={112}
-            className="ring-bronze/30 size-28 rounded-full ring-1"
+          <LogoMark
+            id="footer"
+            title={`Емблема банного комплексу «${settings.site_title}»`}
+            className="size-28"
           />
           <p className="label-caps text-bronze mt-6">{settings.wordmark}</p>
           <p className="text-muted-foreground mt-4 max-w-sm text-[15px] leading-6">

@@ -1,13 +1,12 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { Menu, Phone, X } from "lucide-react";
 
 import { cn } from "@/shared/lib";
-import { ButtonLink, Container } from "@/shared/ui";
+import { ButtonLink, Container, LogoMark } from "@/shared/ui";
 
 export type HeaderNavItem = { href: string; label: string };
 
@@ -51,13 +50,11 @@ export function SiteHeaderClient({
     >
       <Container className="flex h-16 items-center justify-between gap-6 md:h-20">
         <Wordmark asLink={!bare} onNavigate={() => setOpen(false)}>
-          <Image
-            src="/images/logo.png"
-            alt=""
-            width={44}
-            height={44}
-            priority
-            className="ring-bronze/40 group-hover:ring-bronze size-11 shrink-0 rounded-full ring-1 transition-[--tw-ring-color] duration-200"
+          <LogoMark
+            id="header"
+            title=""
+            aria-hidden
+            className="size-11 shrink-0 transition-transform duration-200 group-hover:scale-105"
           />
           <span className="flex flex-col leading-none whitespace-nowrap">
             <span className="label-caps text-bronze">{wordmark}</span>

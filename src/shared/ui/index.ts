@@ -10,6 +10,7 @@ export {
   DialogTitle,
   DialogTrigger,
 } from "./dialog";
+export { LogoMark } from "./logo-mark";
 export { Eyebrow, Section, SectionHeading } from "./section";
 export { ScrollFade } from "./scroll-fade";
 export { Skeleton, SlotListSkeleton } from "./skeleton";

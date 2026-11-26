@@ -203,3 +203,256 @@
   letter-spacing: 0.16em;
   text-transform: uppercase;
 }
+
+/* ---------------------------------------------------------------------------
+   The emblem comes alive
+   ---------------------------------------------------------------------------
+   Animation for the parts of <LogoMark />: the flames dance, the warmth
+   behind them breathes, steam rises and embers drift off. Kept here rather
+   than in a <style> inside the SVG so there is one copy of it however many
+   times the emblem is drawn.
+
+   All of it sits inside `prefers-reduced-motion: no-preference`. A logo that
+   never stops moving is exactly what that setting exists for, and the badge
+   is complete without it. */
+
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes logo-flicker-main {
+    0%,
+    100% {
+      transform: scale(1) translateY(0) skewX(0deg);
+      opacity: 0.98;
+    }
+    25% {
+      transform: scale(1.05, 1.1) translateY(-4px) skewX(-2.5deg);
+      opacity: 1;
+    }
+    50% {
+      transform: scale(0.96, 0.94) translateY(2px) skewX(2deg);
+      opacity: 0.92;
+    }
+    75% {
+      transform: scale(1.03, 1.07) translateY(-3px) skewX(-1.5deg);
+      opacity: 0.99;
+    }
+  }
+
+  @keyframes logo-flicker-left {
+    0%,
+    100% {
+      transform: scale(1) translateY(0) rotate(0deg);
+      opacity: 0.9;
+    }
+    30% {
+      transform: scale(1.08, 1.15) translateY(-5px) rotate(-4deg);
+      opacity: 1;
+    }
+    60% {
+      transform: scale(0.93, 0.91) translateY(2px) rotate(2deg);
+      opacity: 0.85;
+    }
+    85% {
+      transform: scale(1.04, 1.08) translateY(-3px) rotate(-1deg);
+      opacity: 0.95;
+    }
+  }
+
+  @keyframes logo-flicker-right {
+    0%,
+    100% {
+      transform: scale(1) translateY(0) rotate(0deg);
+      opacity: 0.9;
+    }
+    35% {
+      transform: scale(1.06, 1.12) translateY(-4px) rotate(4deg);
+      opacity: 1;
+    }
+    65% {
+      transform: scale(0.92, 0.93) translateY(2px) rotate(-2deg);
+      opacity: 0.84;
+    }
+    85% {
+      transform: scale(1.03, 1.06) translateY(-2px) rotate(2deg);
+      opacity: 0.95;
+    }
+  }
+
+  @keyframes logo-flicker-white {
+    0%,
+    100% {
+      transform: scale(1) translateY(0);
+      opacity: 0.95;
+    }
+    50% {
+      transform: scale(1.1, 1.22) translateY(-6px);
+      opacity: 1;
+    }
+  }
+
+  @keyframes logo-warmth {
+    0%,
+    100% {
+      opacity: 0.22;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 0.42;
+      transform: scale(1.12);
+    }
+  }
+
+  @keyframes logo-steam-a {
+    0% {
+      stroke-dashoffset: 240;
+      opacity: 0;
+      transform: translateY(0) scaleX(1);
+    }
+    30% {
+      opacity: 0.85;
+    }
+    70% {
+      opacity: 0.6;
+    }
+    100% {
+      stroke-dashoffset: 0;
+      opacity: 0;
+      transform: translateY(-28px) scaleX(1.15);
+    }
+  }
+
+  @keyframes logo-steam-b {
+    0% {
+      stroke-dashoffset: 260;
+      opacity: 0;
+      transform: translateY(0) scaleX(1);
+    }
+    25% {
+      opacity: 0.9;
+    }
+    75% {
+      opacity: 0.5;
+    }
+    100% {
+      stroke-dashoffset: 0;
+      opacity: 0;
+      transform: translateY(-34px) scaleX(0.9);
+    }
+  }
+
+  @keyframes logo-steam-c {
+    0% {
+      stroke-dashoffset: 240;
+      opacity: 0;
+      transform: translateY(0) scaleX(1);
+    }
+    35% {
+      opacity: 0.85;
+    }
+    80% {
+      opacity: 0.55;
+    }
+    100% {
+      stroke-dashoffset: 0;
+      opacity: 0;
+      transform: translateY(-30px) scaleX(1.12);
+    }
+  }
+
+  @keyframes logo-spark-a {
+    0% {
+      transform: translate(0, 0) scale(0.6);
+      opacity: 0;
+    }
+    20% {
+      opacity: 1;
+    }
+    80% {
+      opacity: 0.8;
+    }
+    100% {
+      transform: translate(-18px, -45px) scale(1.2);
+      opacity: 0;
+    }
+  }
+
+  @keyframes logo-spark-b {
+    0% {
+      transform: translate(0, 0) scale(0.7);
+      opacity: 0;
+    }
+    25% {
+      opacity: 1;
+    }
+    80% {
+      opacity: 0.9;
+    }
+    100% {
+      transform: translate(16px, -50px) scale(1.1);
+      opacity: 0;
+    }
+  }
+
+  @keyframes logo-spark-c {
+    0% {
+      transform: translate(0, 0) scale(0.5);
+      opacity: 0;
+    }
+    30% {
+      opacity: 1;
+    }
+    85% {
+      opacity: 0.8;
+    }
+    100% {
+      transform: translate(6px, -55px) scale(1);
+      opacity: 0;
+    }
+  }
+
+  .logo-fire-main {
+    transform-origin: 300px 326px;
+    animation: logo-flicker-main 1.4s ease-in-out infinite alternate;
+  }
+  .logo-fire-left {
+    transform-origin: 260px 328px;
+    animation: logo-flicker-left 1.2s ease-in-out infinite alternate;
+  }
+  .logo-fire-right {
+    transform-origin: 340px 328px;
+    animation: logo-flicker-right 1.35s ease-in-out infinite alternate;
+  }
+  .logo-fire-white {
+    transform-origin: 300px 326px;
+    animation: logo-flicker-white 0.9s ease-in-out infinite alternate;
+  }
+  .logo-warmth {
+    transform-origin: 300px 290px;
+    animation: logo-warmth 2s ease-in-out infinite;
+  }
+
+  .logo-steam-1 {
+    stroke-dasharray: 140 100;
+    transform-origin: 270px 140px;
+    animation: logo-steam-a 2.8s linear infinite;
+  }
+  .logo-steam-2 {
+    stroke-dasharray: 160 100;
+    transform-origin: 300px 130px;
+    animation: logo-steam-b 2.4s linear infinite 0.5s;
+  }
+  .logo-steam-3 {
+    stroke-dasharray: 140 100;
+    transform-origin: 330px 140px;
+    animation: logo-steam-c 3.1s linear infinite 1s;
+  }
+
+  .logo-spark-1 {
+    animation: logo-spark-a 2.1s ease-out infinite;
+  }
+  .logo-spark-2 {
+    animation: logo-spark-b 1.8s ease-out infinite 0.7s;
+  }
+  .logo-spark-3 {
+    animation: logo-spark-c 2.5s ease-out infinite 1.2s;
+  }
+}
