@@ -794,6 +794,7 @@ export type Database = {
       room_units: { Args: { p_room_id: string }; Returns: string[] }
       save_gallery: { Args: { items: Json }; Returns: undefined }
       save_rooms: { Args: { items: Json }; Returns: undefined }
+      save_settings: { Args: { payload: Json }; Returns: undefined }
       submit_review: {
         Args: { p_author?: string; p_body?: string; p_rating: number }
         Returns: undefined

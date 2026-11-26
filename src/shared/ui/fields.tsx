@@ -23,12 +23,15 @@ export function TextField({
   value,
   onChange,
   rows,
+  type,
 }: {
   label: string;
   hint?: string;
   value: string;
   onChange: (next: string) => void;
   rows?: number;
+  /** `time` and `date` get the browser's own pickers, which beat ours. */
+  type?: "text" | "time" | "date";
 }) {
   return (
     <label className="flex flex-col gap-2">
@@ -41,7 +44,12 @@ export function TextField({
           className={cn(inputClass, "resize-y leading-6")}
         />
       ) : (
-        <input value={value} onChange={(e) => onChange(e.target.value)} className={inputClass} />
+        <input
+          type={type ?? "text"}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className={cn(inputClass, type && "[color-scheme:dark]")}
+        />
       )}
       {hint ? <span className="text-muted-foreground/70 text-[12px] leading-4">{hint}</span> : null}
     </label>
@@ -89,11 +97,16 @@ export function SwitchField({
   hint,
   value,
   onChange,
+  onLabel = "Увімкнено",
+  offLabel = "Вимкнено",
 }: {
   label: string;
   hint?: string;
   value: boolean;
   onChange: (next: boolean) => void;
+  /** "On" and "off" are not always the words: a day is open or closed. */
+  onLabel?: string;
+  offLabel?: string;
 }) {
   return (
     <div className="flex items-start justify-between gap-5">
@@ -115,7 +128,7 @@ export function SwitchField({
         )}
       >
         {value ? <Eye className="size-4" aria-hidden /> : <EyeOff className="size-4" aria-hidden />}
-        {value ? "Увімкнено" : "Вимкнено"}
+        {value ? onLabel : offLabel}
       </button>
     </div>
   );
