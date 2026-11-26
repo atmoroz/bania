@@ -109,13 +109,18 @@ export function SwitchField({
   offLabel?: string;
 }) {
   return (
-    <div className="flex items-start justify-between gap-5">
-      <div className="min-w-0">
-        <p className="text-[15px]">{label}</p>
-        {hint ? (
-          <p className="text-muted-foreground/70 mt-1 text-[12px] leading-4">{hint}</p>
-        ) : null}
-      </div>
+    <div className={cn("flex items-start gap-5", label ? "justify-between" : "")}>
+      {/* With no label there is nothing to sit opposite, and an empty block
+          would still take its half of the row — which turned a day of the
+          week into two lines on a phone. */}
+      {label ? (
+        <div className="min-w-0">
+          <p className="text-[15px]">{label}</p>
+          {hint ? (
+            <p className="text-muted-foreground/70 mt-1 text-[12px] leading-4">{hint}</p>
+          ) : null}
+        </div>
+      ) : null}
       <button
         type="button"
         aria-pressed={value}

@@ -190,61 +190,73 @@ export function SettingsEditor({ initial }: { initial: VenueConfig }) {
             return (
               <li
                 key={weekday}
-                className="border-bronze/15 flex flex-wrap items-end gap-4 border-b pb-4 last:border-b-0"
+                className="border-bronze/15 border-b pb-4 last:border-b-0"
               >
-                <span className="w-28 shrink-0 text-[15px]">{label}</span>
-
-                <div className="w-44 shrink-0">
-                  <SwitchField
-                    label=""
-                    onLabel="Відчинено"
-                    offLabel="Вихідний"
-                    value={!day.isClosed}
-                    onChange={(open) => setDay(weekday, { isClosed: !open })}
-                  />
-                </div>
-
-                {day.isClosed ? (
-                  <span className="text-muted-foreground text-[13px]">
-                    Цього дня календар нічого не пропонує
-                  </span>
-                ) : (
-                  <div className="flex flex-wrap items-end gap-3">
-                    <div className="w-32">
-                      <TextField
-                        label="Відкриття"
-                        type="time"
-                        value={day.opensAt}
-                        onChange={(v) => setDay(weekday, { opensAt: v })}
-                      />
-                    </div>
-                    <div className="w-32">
-                      <TextField
-                        label="Закриття"
-                        type="time"
-                        value={day.closesAt}
-                        onChange={(v) => setDay(weekday, { closesAt: v })}
-                      />
-                    </div>
+                <div className="flex flex-wrap items-end gap-x-4 gap-y-3">
+                  {/* The day and its switch share a line, whatever the
+                      width: on a phone they were stacking into a mosaic
+                      where the one thing you want to see at a glance -- is
+                      this day open -- was never beside its name. */}
+                  <div className="flex flex-1 items-center justify-between gap-3 sm:flex-none sm:justify-start sm:gap-5">
+                    <span className="text-[15px] sm:w-24">{label}</span>
+                    <SwitchField
+                      label=""
+                      onLabel="Відчинено"
+                      offLabel="Вихідний"
+                      value={!day.isClosed}
+                      onChange={(open) => setDay(weekday, { isClosed: !open })}
+                    />
                   </div>
-                )}
 
-                <Button
-                  type="button"
-                  variant="ghost"
-                  className="ml-auto px-4 py-2"
-                  onClick={() => copyToWeek(day)}
-                >
-                  <Copy className="size-4" aria-hidden />
-                  На всі дні
-                </Button>
+                  {day.isClosed ? (
+                    <span className="text-muted-foreground text-[13px]">
+                      Цього дня календар нічого не пропонує
+                    </span>
+                  ) : (
+                    <div className="flex items-end gap-3">
+                      <div className="w-28">
+                        <TextField
+                          label="Відкриття"
+                          type="time"
+                          value={day.opensAt}
+                          onChange={(v) => setDay(weekday, { opensAt: v })}
+                        />
+                      </div>
+                      <div className="w-28">
+                        <TextField
+                          label="Закриття"
+                          type="time"
+                          value={day.closesAt}
+                          onChange={(v) => setDay(weekday, { closesAt: v })}
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    title="Застосувати цей час до всіх днів"
+                    // No `ml-auto` on a phone: an auto margin makes the
+                    // button greedy for the leftover space and pushes
+                    // itself onto a line of its own, three pixels short of
+                    // fitting beside the times.
+                    className="px-2 py-2 sm:ml-auto sm:px-4"
+                    onClick={() => copyToWeek(day)}
+                  >
+                    <Copy className="size-4" aria-hidden />
+                    <span className="hidden sm:inline">На всі дні</span>
+                    <span className="sr-only sm:hidden">На всі дні</span>
+                  </Button>
+                </div>
               </li>
             );
           })}
         </ul>
         <p className="text-muted-foreground/70 text-[12px] leading-4">
-          Нічні зміни (коли закриття після опівночі) поки не підтримуються — час закриття
-          має бути пізніше за час відкриття того ж дня.
+          Кнопка з двома квадратами копіює час цього дня на всі інші. Нічні зміни (коли
+          закриття після опівночі) поки не підтримуються — час закриття має бути пізніше
+          за час відкриття того ж дня.
         </p>
       </Group>
 
