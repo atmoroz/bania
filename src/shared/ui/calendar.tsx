@@ -45,7 +45,15 @@ export function Calendar({ className, classNames, ...props }: DayPickerProps) {
         week: "flex w-full",
         day: "border-bronze/10 flex-1 border-t p-0",
         day_button:
-          "aria-selected:bg-bronze aria-selected:text-primary-foreground hover:bg-surface-high flex h-12 w-full items-center justify-center text-[15px] transition-colors disabled:cursor-not-allowed disabled:opacity-25 disabled:hover:bg-transparent",
+          "hover:bg-surface-high flex h-12 w-full items-center justify-center text-[15px] transition-colors disabled:cursor-not-allowed disabled:opacity-25 disabled:hover:bg-transparent",
+        // The chosen day is marked on the cell, not on the button inside
+        // it: react-day-picker puts `aria-selected` on the `td`, so the
+        // `aria-selected:` variants this used to carry on the button never
+        // matched anything — the selected day was never highlighted at all.
+        // It only looked right while the selection happened to be today,
+        // whose own bronze text came from the cell and did work.
+        selected:
+          "bg-bronze [&>button]:text-primary-foreground [&>button]:hover:bg-bronze [&>button]:font-medium",
         today: "text-bronze font-medium",
         outside: "opacity-30",
         ...classNames,
