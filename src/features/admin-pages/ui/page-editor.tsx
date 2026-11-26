@@ -1,10 +1,10 @@
 "use client";
 
-import { ExternalLink, Eye, Loader2 } from "lucide-react";
+import { ExternalLink,  Loader2 } from "lucide-react";
 import { useEffect, useMemo, useState, useTransition } from "react";
 
 import { cn } from "@/shared/lib";
-import { Button, SlotListSkeleton } from "@/shared/ui";
+import { SaveBar, SlotListSkeleton } from "@/shared/ui";
 
 import {
   discardDrafts,
@@ -222,52 +222,26 @@ export function PageEditor({ pages }: { pages: AdminPage[] }) {
             ))}
           </ul>
 
-          {/* One place to act, under the whole form. Previewing and saving are
-              page-wide, so putting a button on each block would make the owner
-              remember which ones they had already pressed. */}
-          <div className="border-bronze/15 mt-8 border-t pt-6">
-            {error ? <p className="text-destructive mb-4 text-[15px]">{error}</p> : null}
+          {/* One place to act, under the whole form. Previewing and saving
+              are page-wide, so putting a button on each block would make the
+              owner remember which ones they had already pressed. */}
+          {error ? <p className="text-destructive mt-8 text-[15px]">{error}</p> : null}
 
-            {/* The same bar as the gallery and the catalogue: what the
-                state is on the left, what to do about it on the right, with
-                the one button that changes the site last. */}
-            <div className="flex flex-wrap items-center justify-between gap-4">
-              <p className="text-muted-foreground text-[13px] leading-5">
-                {saved && !dirty
-                  ? "Збережено. Зміни вже на сайті."
-                  : dirty
-                    ? `Незбережених змін: ${changedIds.size}. На сайті вони ще не видні.`
-                    : "Змін немає."}
-              </p>
-
-              <div className="flex flex-wrap items-center gap-3">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  onClick={preview}
-                  disabled={!dirty || isBusy}
-                  title="Відкриє сторінку зі змінами в новій вкладці. Сайт не зміниться."
-                >
-                  <Eye className="size-4" aria-hidden />
-                  Переглянути
-                </Button>
-
-                <Button type="button" variant="ghost" onClick={discard} disabled={!dirty || isBusy}>
-                  Скасувати
-                </Button>
-
-                <Button type="button" onClick={publish} disabled={!dirty || isBusy}>
-                  {isBusy ? (
-                    <>
-                      <Loader2 className="size-4 animate-spin" aria-hidden /> Зберігаємо…
-                    </>
-                  ) : (
-                    "Зберегти"
-                  )}
-                </Button>
-              </div>
-            </div>
-          </div>
+          <SaveBar
+            status={
+              saved && !dirty
+                ? "Збережено. Зміни вже на сайті."
+                : dirty
+                  ? `Незбережених змін: ${changedIds.size}. На сайті вони ще не видні.`
+                  : "Змін немає."
+            }
+            dirty={dirty}
+            busy={isBusy}
+            onPreview={preview}
+            previewTitle="Відкриє сторінку зі змінами в новій вкладці. Сайт не зміниться."
+            onDiscard={discard}
+            onSave={publish}
+          />
         </>
       )}
     </div>

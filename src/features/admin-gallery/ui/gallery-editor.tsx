@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useEffect, useLayoutEffect, useRef, useState, useTransition } from "react";
-import { Eye, EyeOff, ImagePlus, Loader2, Pencil, Trash2 } from "lucide-react";
+import { Eye, EyeOff, ImagePlus, Pencil, Trash2 } from "lucide-react";
 
 import { MediaPickerDialog } from "@/features/admin-media";
 // Straight from the module, not the slice barrel: the barrel also exports
@@ -10,7 +10,7 @@ import { MediaPickerDialog } from "@/features/admin-media";
 // into a client bundle.
 import { clearStaged, stageGallery } from "@/features/admin-preview/model/stage";
 import { cn } from "@/shared/lib";
-import { Button } from "@/shared/ui";
+import { Button, SaveBar } from "@/shared/ui";
 
 import {
   getGalleryPhotos,
@@ -464,29 +464,15 @@ export function GalleryEditor({ initial }: { initial: GalleryPhoto[] }) {
         </ul>
       )}
 
-      {/* One bar for the whole gallery, as on the pages tab: until Save is
-          pressed the site has not changed, and that is said rather than
-          implied. */}
-      <div className="border-bronze/20 mt-10 flex flex-wrap items-center justify-between gap-4 border-t pt-6">
-        <p className="text-muted-foreground text-[13px]">
-          {dirty
-            ? "Є незбережені зміни. На сайті їх ще не видно."
-            : "Усе збережено."}
-        </p>
-
-        <div className="flex flex-wrap items-center gap-3">
-          <Button type="button" variant="ghost" disabled={busy} onClick={preview}>
-            Переглянути
-          </Button>
-          <Button type="button" variant="ghost" disabled={!dirty || busy} onClick={discard}>
-            Скасувати
-          </Button>
-          <Button type="button" disabled={!dirty || busy} onClick={save}>
-            {busy ? <Loader2 className="size-4 animate-spin" aria-hidden /> : null}
-            Зберегти
-          </Button>
-        </div>
-      </div>
+      <SaveBar
+        status={dirty ? "Є незбережені зміни. На сайті їх ще не видно." : "Усе збережено."}
+        dirty={dirty}
+        busy={busy}
+        onPreview={preview}
+        previewTitle="Відкриє сторінку зі змінами в новій вкладці. Сайт не зміниться."
+        onDiscard={discard}
+        onSave={save}
+      />
 
       <MediaPickerDialog
         open={adding}

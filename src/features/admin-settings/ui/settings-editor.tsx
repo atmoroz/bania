@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Copy, Loader2, Plus, Trash2 } from "lucide-react";
+import { Copy, Plus, Trash2 } from "lucide-react";
 
-import { Button, SwitchField, TextField } from "@/shared/ui";
+import { Button, SaveBar, SwitchField, TextField } from "@/shared/ui";
 
 import {
   getVenueConfig,
@@ -335,28 +335,16 @@ export function SettingsEditor({ initial }: { initial: VenueConfig }) {
         </Button>
       </Group>
 
-      <div className="border-bronze/20 mt-10 flex flex-wrap items-center justify-between gap-4 border-t pt-6">
-        <p className="text-muted-foreground text-[13px]">
-          {dirty ? "Є незбережені зміни. На сайті їх ще не видно." : "Усе збережено."}
-        </p>
-        <div className="flex flex-wrap items-center gap-3">
-          <Button
-            type="button"
-            variant="ghost"
-            disabled={!dirty || busy}
-            onClick={() => {
-              setError(null);
-              setConfig(saved);
-            }}
-          >
-            Скасувати
-          </Button>
-          <Button type="button" disabled={!dirty || busy} onClick={save}>
-            {busy ? <Loader2 className="size-4 animate-spin" aria-hidden /> : null}
-            Зберегти
-          </Button>
-        </div>
-      </div>
+      <SaveBar
+        status={dirty ? "Є незбережені зміни. На сайті їх ще не видно." : "Усе збережено."}
+        dirty={dirty}
+        busy={busy}
+        onDiscard={() => {
+          setError(null);
+          setConfig(saved);
+        }}
+        onSave={save}
+      />
     </>
   );
 }

@@ -21,9 +21,11 @@ const tabs = [
   { href: "/admin/bookings", label: "Бронювання", icon: CalendarDays },
   { href: "/admin/pages", label: "Сторінки", icon: FileText },
   { href: "/admin/locations", label: "Локації", icon: MapPin },
-  { href: "/admin/media", label: "Медіа", icon: Images },
   { href: "/admin/gallery", label: "Галерея", icon: LayoutGrid },
   { href: "/admin/reviews", label: "Відгуки", icon: Star },
+  // The library is where you go to add a file, not to run the place: it
+  // sits with the settings rather than among the pages people read.
+  { href: "/admin/media", label: "Медіа", icon: Images },
   { href: "/admin/settings", label: "Налаштування", icon: Settings },
 ];
 

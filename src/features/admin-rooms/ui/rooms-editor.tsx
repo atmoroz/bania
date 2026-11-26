@@ -1,9 +1,16 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Loader2, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
 
-import { Button, Dialog, DialogContent, DialogDescription, DialogTitle } from "@/shared/ui";
+import {
+  Button,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+  SaveBar,
+} from "@/shared/ui";
 
 // Straight from the module, not the slice barrel: the barrel also exports
 // the preview reader, which reaches for next/headers and so cannot be pulled
@@ -251,37 +258,26 @@ export function RoomsEditor({
         </DialogContent>
       </Dialog>
 
-      <div className="border-bronze/20 mt-10 flex flex-wrap items-center justify-between gap-4 border-t pt-6">
-        <p className="text-muted-foreground text-[13px]">
-          {removed.length > 0
+      <SaveBar
+        status={
+          removed.length > 0
             ? `Буде видалено: ${removed.map((r) => r.name || r.slug).join(", ")}. Решта змін теж іще не на сайті.`
             : dirty
               ? "Є незбережені зміни. На сайті їх ще не видно."
-              : "Усе збережено."}
-        </p>
+              : "Усе збережено."
+        }
+        dirty={dirty}
+        busy={busy}
+        onPreview={preview}
+        previewTitle="Відкриє сторінку зі змінами в новій вкладці. Сайт не зміниться."
+        onDiscard={() => {
+          setError(null);
+          setCards(saved);
+          startWork(async () => clearStaged("catalogue"));
+        }}
+        onSave={save}
+      />
 
-        <div className="flex flex-wrap items-center gap-3">
-          <Button type="button" variant="ghost" disabled={busy} onClick={preview}>
-            Переглянути
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            disabled={!dirty || busy}
-            onClick={() => {
-              setError(null);
-              setCards(saved);
-              startWork(async () => clearStaged("catalogue"));
-            }}
-          >
-            Скасувати
-          </Button>
-          <Button type="button" disabled={!dirty || busy} onClick={save}>
-            {busy ? <Loader2 className="size-4 animate-spin" aria-hidden /> : null}
-            Зберегти
-          </Button>
-        </div>
-      </div>
     </>
   );
 }
