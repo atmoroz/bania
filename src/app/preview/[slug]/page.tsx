@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
 
+import { getStagedCatalogue, getStagedGallery } from "@/features/admin-preview";
 import { getPreviewBlocks } from "@/features/admin-pages";
 import { getAdmin } from "@/shared/api";
 import { Container } from "@/shared/ui";
@@ -37,7 +38,13 @@ async function Preview({ params }: { params: Promise<{ slug: string }> }) {
   const admin = await getAdmin();
   if (!admin) redirect("/admin/login");
 
-  const blocks = await getPreviewBlocks(slug);
+  // Three sources of "not yet published", resolved together: the page's own
+  // blocks, and whatever the catalogue and gallery editors have staged.
+  const [blocks, locations, photos] = await Promise.all([
+    getPreviewBlocks(slug),
+    getStagedCatalogue(),
+    getStagedGallery(),
+  ]);
 
   return (
     <div className="flex min-h-dvh flex-col">
@@ -61,7 +68,7 @@ async function Preview({ params }: { params: Promise<{ slug: string }> }) {
             </p>
           </Container>
         ) : (
-          <BlockRenderer blocks={blocks} />
+          <BlockRenderer blocks={blocks} staged={{ locations, photos }} />
         )}
       </main>
       <SiteFooter bare />

@@ -5,8 +5,12 @@ import { useEffect, useLayoutEffect, useRef, useState, useTransition } from "rea
 import { Eye, EyeOff, ImagePlus, Loader2, Pencil, Trash2 } from "lucide-react";
 
 import { MediaPickerDialog } from "@/features/admin-media";
+// Straight from the module, not the slice barrel: the barrel also exports
+// the preview reader, which reaches for next/headers and so cannot be pulled
+// into a client bundle.
+import { clearStaged, stageGallery } from "@/features/admin-preview/model/stage";
 import { cn } from "@/shared/lib";
-import { Button, ButtonLink } from "@/shared/ui";
+import { Button } from "@/shared/ui";
 
 import {
   getGalleryPhotos,
@@ -300,6 +304,7 @@ export function GalleryEditor({ initial }: { initial: GalleryPhoto[] }) {
       }
 
       setError(null);
+      await clearStaged("gallery");
       // Reloaded rather than assumed: the new rows have ids now, and the
       // next save has to update them instead of inserting them again.
       const fresh = toTiles(await getGalleryPhotos());
@@ -309,10 +314,34 @@ export function GalleryEditor({ initial }: { initial: GalleryPhoto[] }) {
     });
   }
 
+  /** Stages what is on screen and opens the real page with it. */
+  function preview() {
+    startWork(async () => {
+      const result = await stageGallery(
+        order.current
+          .filter((t) => t.isVisible)
+          .map((t) => ({
+            id: t.key,
+            src: t.url,
+            alt: t.alt,
+            title: t.title || null,
+            caption: t.caption || null,
+          })),
+      );
+      if (!result.ok) {
+        setError(result.message);
+        return;
+      }
+      setError(null);
+      window.open("/preview/gallery", "_blank", "noopener");
+    });
+  }
+
   function discard() {
     setError(null);
     spots.current.clear();
     setOrder(saved);
+    startWork(async () => clearStaged("gallery"));
   }
 
   const used = items.map((i) => i.path);
@@ -446,9 +475,9 @@ export function GalleryEditor({ initial }: { initial: GalleryPhoto[] }) {
         </p>
 
         <div className="flex flex-wrap items-center gap-3">
-          <ButtonLink href="/gallery" variant="ghost">
-            Сторінка на сайті
-          </ButtonLink>
+          <Button type="button" variant="ghost" disabled={busy} onClick={preview}>
+            Переглянути
+          </Button>
           <Button type="button" variant="ghost" disabled={!dirty || busy} onClick={discard}>
             Скасувати
           </Button>

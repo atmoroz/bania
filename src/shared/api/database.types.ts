@@ -78,6 +78,24 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_previews: {
+        Row: {
+          payload: Json
+          scope: string
+          updated_at: string
+        }
+        Insert: {
+          payload: Json
+          scope: string
+          updated_at?: string
+        }
+        Update: {
+          payload?: Json
+          scope?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       booking_rooms: {
         Row: {
           booking_id: string
@@ -735,6 +753,14 @@ export type Database = {
           p_slot_starts: string[]
         }
         Returns: string[]
+      }
+      room_locks: {
+        Args: never
+        Returns: {
+          bookings: number
+          part_of: number
+          room_id: string
+        }[]
       }
       room_minimum_minutes: { Args: { p_room_slug: string }; Returns: number }
       room_minimums: {

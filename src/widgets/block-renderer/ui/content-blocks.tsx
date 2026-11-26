@@ -2,17 +2,24 @@ import { Suspense } from "react";
 import { Clock, Mail, MapPin, Navigation, Phone, Star } from "lucide-react";
 
 import { AddonRow, getAddons } from "@/entities/addon";
-import { getLocations, LocationCard } from "@/entities/location";
+import { getLocations, LocationCard, type Location } from "@/entities/location";
 import type { BlockContent } from "@/entities/page-block";
-import { getPhotos, PhotoTile } from "@/entities/photo";
+import { getPhotos, PhotoTile, type Photo } from "@/entities/photo";
 import { getReviews, ReviewCard, summarise, writtenOnly } from "@/entities/review";
 import { ReviewForm } from "@/features/review-submit";
 import { getSettings } from "@/entities/settings";
 import { BookingCalendar } from "@/features/booking-hold";
 import { ButtonLink, Card, Section, SectionHeading } from "@/shared/ui";
 
-export async function LocationsBlock({ content }: { content: BlockContent["locations"] }) {
-  const locations = await getLocations();
+export async function LocationsBlock({
+  content,
+  staged,
+}: {
+  content: BlockContent["locations"];
+  /** Unsaved cards from the panel, when this is a preview. */
+  staged?: Location[] | null;
+}) {
+  const locations = staged ?? (await getLocations());
   return (
     <Section>
       <SectionHeading eyebrow={content.eyebrow} title={content.title} lead={content.lead} />
@@ -44,8 +51,14 @@ export async function AddonsBlock({ content }: { content: BlockContent["addons"]
   );
 }
 
-export async function GalleryBlock({ content }: { content: BlockContent["gallery"] }) {
-  const photos = await getPhotos();
+export async function GalleryBlock({
+  content,
+  staged,
+}: {
+  content: BlockContent["gallery"];
+  staged?: Photo[] | null;
+}) {
+  const photos = staged ?? (await getPhotos());
   return (
     <Section>
       <SectionHeading eyebrow={content.eyebrow} title={content.title} lead={content.lead} />

@@ -3,7 +3,13 @@
 import { useState, useTransition } from "react";
 import { Loader2, Plus } from "lucide-react";
 
-import { Button, ButtonLink } from "@/shared/ui";
+import { Button, Dialog, DialogContent, DialogDescription, DialogTitle } from "@/shared/ui";
+
+// Straight from the module, not the slice barrel: the barrel also exports
+// the preview reader, which reaches for next/headers and so cannot be pulled
+// into a client bundle.
+import { clearStaged, stageCatalogue } from "@/features/admin-preview/model/stage";
+import type { StagedCard } from "@/features/admin-preview/model/types";
 
 import { getAdminRooms, saveRooms, type AdminRoom } from "../model/actions";
 import { RoomEditor, type Card } from "./room-editor";
@@ -44,10 +50,18 @@ const shape = (card: Card) =>
  * deleted here: a card can already be attached to bookings, and "no longer
  * offered" is what the visibility switch is for.
  */
-export function RoomsEditor({ initial }: { initial: AdminRoom[] }) {
+export function RoomsEditor({
+  initial,
+  venueMinimum,
+}: {
+  initial: AdminRoom[];
+  /** The venue default, so a card with no override previews honestly. */
+  venueMinimum: number;
+}) {
   const [saved, setSaved] = useState(() => toCards(initial));
   const [cards, setCards] = useState(saved);
   const [error, setError] = useState<string | null>(null);
+  const [doomed, setDoomed] = useState<Card | null>(null);
   const [busy, startWork] = useTransition();
 
   const changedKeys = new Set(
@@ -59,7 +73,8 @@ export function RoomsEditor({ initial }: { initial: AdminRoom[] }) {
       })
       .map((c) => c.key),
   );
-  const dirty = changedKeys.size > 0 || cards.length !== saved.length;
+  const removed = saved.filter((s) => !cards.some((c) => c.key === s.key));
+  const dirty = changedKeys.size > 0 || removed.length > 0;
 
   function move(index: number, direction: "up" | "down") {
     const to = direction === "up" ? index - 1 : index + 1;
@@ -94,8 +109,46 @@ export function RoomsEditor({ initial }: { initial: AdminRoom[] }) {
         coverMediaId: null,
         photos: [],
         componentIds: [],
+        lock: { bookings: 0, partOf: 0 },
       },
     ]);
+  }
+
+  /** The catalogue as the page would render it, for the preview route. */
+  function staged(): StagedCard[] {
+    const named = new Map(cards.map((c) => [c.id, c.name]));
+    return cards
+      .filter((c) => c.isVisible)
+      .map((c) => ({
+        slug: c.slug,
+        name: c.name,
+        eyebrow: c.eyebrow || null,
+        summary: c.summary || null,
+        description: c.description || null,
+        capacity: c.capacity,
+        pricePerHour: c.pricePerHour,
+        minimumMinutes: c.minDurationMinutes ?? venueMinimum,
+        highlights: c.highlights.filter(Boolean),
+        ctaLabel: c.ctaLabel || null,
+        isFeatured: c.isFeatured,
+        image: c.photos.find((p) => p.mediaId === c.coverMediaId)
+          ? { src: c.photos.find((p) => p.mediaId === c.coverMediaId)!.url, alt: "" }
+          : null,
+        partOf: c.componentIds.map((id) => named.get(id) ?? "").filter(Boolean),
+        photos: c.photos.map((p) => ({ src: p.url, alt: p.alt, caption: null })),
+      }));
+  }
+
+  function preview() {
+    startWork(async () => {
+      const result = await stageCatalogue(staged());
+      if (!result.ok) {
+        setError(result.message);
+        return;
+      }
+      setError(null);
+      window.open("/preview/pricing", "_blank", "noopener");
+    });
   }
 
   function save() {
@@ -134,6 +187,7 @@ export function RoomsEditor({ initial }: { initial: AdminRoom[] }) {
       }
 
       setError(null);
+      await clearStaged("catalogue");
       // Reloaded rather than assumed: new cards have ids now, and the next
       // save has to update them instead of creating them again.
       const fresh = toCards(await getAdminRooms());
@@ -159,6 +213,7 @@ export function RoomsEditor({ initial }: { initial: AdminRoom[] }) {
             total={cards.length}
             onChange={(next) => setCards(cards.map((c) => (c.key === card.key ? next : c)))}
             onMove={(direction) => move(index, direction)}
+            onRemove={() => setDoomed(card)}
           />
         ))}
       </ul>
@@ -168,15 +223,47 @@ export function RoomsEditor({ initial }: { initial: AdminRoom[] }) {
         Додати локацію
       </Button>
 
+      {/* Deleting a card is the one thing here that takes something away
+          rather than changing it, so it is asked about — even though
+          nothing happens in the database until Save. */}
+      <Dialog open={doomed !== null} onOpenChange={(open) => !open && setDoomed(null)}>
+        <DialogContent>
+          <DialogTitle>Видалити «{doomed?.name || doomed?.slug}»?</DialogTitle>
+          <DialogDescription className="text-muted-foreground mt-3 text-[15px] leading-6">
+            Картка зникне з каталогу разом зі своїми фотографіями та складом. Остаточно
+            це станеться після «Зберегти» — до того можна натиснути «Скасувати».
+            {doomed?.id === null ? " Ця картка ще не збережена, тож зникне одразу." : ""}
+          </DialogDescription>
+          <div className="mt-7 flex flex-wrap justify-end gap-3">
+            <Button type="button" variant="ghost" onClick={() => setDoomed(null)}>
+              Залишити
+            </Button>
+            <Button
+              type="button"
+              onClick={() => {
+                setCards(cards.filter((c) => c.key !== doomed?.key));
+                setDoomed(null);
+              }}
+            >
+              Видалити
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <div className="border-bronze/20 mt-10 flex flex-wrap items-center justify-between gap-4 border-t pt-6">
         <p className="text-muted-foreground text-[13px]">
-          {dirty ? "Є незбережені зміни. На сайті їх ще не видно." : "Усе збережено."}
+          {removed.length > 0
+            ? `Буде видалено: ${removed.map((r) => r.name || r.slug).join(", ")}. Решта змін теж іще не на сайті.`
+            : dirty
+              ? "Є незбережені зміни. На сайті їх ще не видно."
+              : "Усе збережено."}
         </p>
 
         <div className="flex flex-wrap items-center gap-3">
-          <ButtonLink href="/pricing" variant="ghost">
-            Сторінка на сайті
-          </ButtonLink>
+          <Button type="button" variant="ghost" disabled={busy} onClick={preview}>
+            Переглянути
+          </Button>
           <Button
             type="button"
             variant="ghost"
@@ -184,6 +271,7 @@ export function RoomsEditor({ initial }: { initial: AdminRoom[] }) {
             onClick={() => {
               setError(null);
               setCards(saved);
+              startWork(async () => clearStaged("catalogue"));
             }}
           >
             Скасувати

@@ -29,6 +29,11 @@ export type AdminRoom = {
   photos: RoomPhoto[];
   /** Ids of the cards this one is made of; empty when it stands alone. */
   componentIds: string[];
+  /**
+   * Why this card cannot be removed, if it cannot. Bookings keep a card
+   * forever; being part of a set keeps it until the set lets go.
+   */
+  lock: { bookings: number; partOf: number };
 };
 
 export type RoomDraft = {
@@ -58,12 +63,27 @@ async function requireAdmin() {
   if (!admin) throw new Error("Not authorised");
 }
 
+/**
+ * The venue's own minimum, in minutes.
+ *
+ * The panel needs it to preview a card that inherits rather than overrides:
+ * the resolved figure it loaded with is the old one the moment the override
+ * is cleared.
+ */
+export async function getVenueMinimumMinutes(): Promise<number> {
+  await requireAdmin();
+
+  const supabase = await createSupabaseServerClient();
+  const { data } = await supabase.from("settings").select("min_duration_minutes").maybeSingle();
+  return data?.min_duration_minutes ?? 60;
+}
+
 /** The whole catalogue, hidden cards included, in display order. */
 export async function getAdminRooms(): Promise<AdminRoom[]> {
   await requireAdmin();
 
   const supabase = await createSupabaseServerClient();
-  const [{ data, error }, { data: minimums }] = await Promise.all([
+  const [{ data, error }, { data: minimums }, { data: locks }] = await Promise.all([
     supabase
       .from("rooms")
       .select(
@@ -76,11 +96,13 @@ export async function getAdminRooms(): Promise<AdminRoom[]> {
       )
       .order("sort_order"),
     supabase.rpc("room_minimums"),
+    supabase.rpc("room_locks"),
   ]);
 
   if (error) throw new Error(`Failed to load the catalogue: ${error.message}`);
 
   const minimumBySlug = new Map((minimums ?? []).map((m) => [m.slug, m.minimum_minutes]));
+  const lockById = new Map((locks ?? []).map((l) => [l.room_id, l]));
 
   return (data ?? []).map((r) => ({
     id: r.id,
@@ -116,6 +138,10 @@ export async function getAdminRooms(): Promise<AdminRoom[]> {
           : [],
       ),
     componentIds: r.components.map((c) => c.component_id),
+    lock: {
+      bookings: Number(lockById.get(r.id)?.bookings ?? 0),
+      partOf: Number(lockById.get(r.id)?.part_of ?? 0),
+    },
   }));
 }
 
@@ -153,11 +179,14 @@ export async function saveRooms(items: RoomDraft[]): Promise<RoomResult> {
   });
 
   if (error) {
-    // The one failure the owner can actually fix, said in their words.
-    const message = error.message.includes("rooms_slug_key")
-      ? "Адреса вже зайнята іншою карткою. Змініть її."
-      : `Не вдалося зберегти: ${error.message}`;
-    return { ok: false, message };
+    // Two failures the owner can act on. The refusal to delete already
+    // arrives as a sentence naming the card, so it is passed straight
+    // through rather than wrapped in another one.
+    if (error.code === "23505" || error.message.includes("rooms_slug_key")) {
+      return { ok: false, message: "Адреса вже зайнята іншою карткою. Змініть її." };
+    }
+    if (error.code === "23503") return { ok: false, message: error.message };
+    return { ok: false, message: `Не вдалося зберегти: ${error.message}` };
   }
 
   updateTag(CONTENT_TAG);

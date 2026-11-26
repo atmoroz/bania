@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { ChevronDown, ChevronUp, Trash2 } from "lucide-react";
 import { useState } from "react";
 
 import { cn } from "@/shared/lib";
@@ -37,6 +37,7 @@ export function RoomEditor({
   total,
   onChange,
   onMove,
+  onRemove,
 }: {
   card: Card;
   /** The other cards, offered as the parts a bundle can be made of. */
@@ -46,8 +47,17 @@ export function RoomEditor({
   total: number;
   onChange: (next: Card) => void;
   onMove: (direction: "up" | "down") => void;
+  onRemove: () => void;
 }) {
   const [open, setOpen] = useState(card.id === null);
+  const held =
+    card.id === null
+      ? null
+      : card.lock.bookings > 0
+        ? "Не можна видалити: за карткою вже є бронювання"
+        : card.lock.partOf > 0
+          ? "Не можна видалити: картка входить до складу сету"
+          : null;
   const set = <K extends keyof Card>(key: K, value: Card[K]) => onChange({ ...card, [key]: value });
 
   return (
@@ -100,6 +110,19 @@ export function RoomEditor({
             className="border-bronze/25 hover:border-bronze border p-2 transition-colors disabled:opacity-30"
           >
             <ChevronDown className="size-4" aria-hidden />
+          </button>
+          {/* What holds a card is shown here rather than found out by
+              pressing: a sold card stays forever, a card inside a set stays
+              until the set lets go of it. */}
+          <button
+            type="button"
+            aria-label={held ?? "Видалити картку"}
+            title={held ?? "Видалити картку"}
+            disabled={held !== null}
+            onClick={onRemove}
+            className="border-bronze/25 hover:border-bronze border p-2 transition-colors disabled:opacity-30"
+          >
+            <Trash2 className="size-4" aria-hidden />
           </button>
         </div>
       </div>
