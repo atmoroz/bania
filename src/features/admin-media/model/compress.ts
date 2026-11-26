@@ -10,13 +10,30 @@
  * original would spend the storage quota, the egress quota and the visitor's
  * connection on pixels no screen will show.
  *
- * WebP at 2560 px takes a typical phone photograph to a few hundred
- * kilobytes with no visible difference at the sizes the site uses.
+ * The settings are deliberately cautious. Measured on a photograph from the
+ * bucket, WebP quality 0.82 → 0.90 costs about 40% more bytes, and 0.90 is
+ * where the difference stops being findable by pixel-peeping. Paying that is
+ * worth it: the saving over the original is still several times over, and a
+ * photograph of the venue is the thing being sold.
  */
 
-/** Wider than any image this site renders, with room for a retina screen. */
-const MAX_EDGE = 2560;
-const QUALITY = 0.82;
+/**
+ * Wider than this site ever draws an image, including a full-bleed banner on
+ * a large screen at twice the pixel density.
+ */
+const MAX_EDGE = 3200;
+
+/** High enough that the re-encoding is not meant to be visible. */
+const QUALITY = 0.9;
+
+/**
+ * Below this, a file that needs no resizing is left exactly as it is.
+ *
+ * Re-encoding it could only trade real quality for a saving too small to
+ * matter -- and lossy WebP is at its worst on the flat graphics and text that
+ * small files often are.
+ */
+const LEAVE_ALONE_BYTES = 1.5 * 1024 * 1024;
 
 export type Prepared = { file: File; originalBytes: number };
 
@@ -58,6 +75,9 @@ export async function prepareForUpload(file: File): Promise<Prepared> {
   try {
     const longest = Math.max(bitmap.width, bitmap.height);
     const scale = longest > MAX_EDGE ? MAX_EDGE / longest : 1;
+
+    if (scale === 1 && file.size <= LEAVE_ALONE_BYTES) return original;
+
     const width = Math.round(bitmap.width * scale);
     const height = Math.round(bitmap.height * scale);
 

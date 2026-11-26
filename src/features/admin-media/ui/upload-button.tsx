@@ -61,6 +61,14 @@ export function UploadButton({ onUploaded }: { onUploaded: () => void }) {
         {busy ? "Завантаження…" : "Завантажити"}
       </Button>
 
+      {/* Said here rather than left to be discovered: the file dialog filters
+          silently, and nothing else on the page explains what happens to a
+          photograph after it is chosen. */}
+      <p className="text-muted-foreground/70 max-w-[380px] text-[12px] leading-4">
+        PNG, JPEG, WebP або AVIF. Великі знімки автоматично зменшуються до 3200 px і
+        зберігаються як WebP — на вигляд те саме, але в кілька разів легше.
+      </p>
+
       {saving ? <p className="text-sage text-[13px]">{saving}</p> : null}
 
       {errors.length > 0 ? (
