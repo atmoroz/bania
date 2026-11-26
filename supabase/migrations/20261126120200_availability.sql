@@ -104,11 +104,11 @@ create or replace view public.busy_intervals
 with (security_invoker = off)
 as
   select
-    b.room_id,
-    b.occupied
-  from public.bookings b
-  join public.rooms r on r.id = b.room_id
-  where b.status <> 'CANCELLED'
+    br.room_id,
+    br.occupied
+  from public.booking_rooms br
+  join public.rooms r on r.id = br.room_id
+  where br.is_active
     and r.is_visible;
 
 revoke all on public.busy_intervals from public;

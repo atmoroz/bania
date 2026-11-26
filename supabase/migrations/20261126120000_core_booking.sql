@@ -174,28 +174,25 @@ create trigger closures_touch_updated_at before update on public.closures
 -- bookings
 -- ---------------------------------------------------------------------------
 
+-- A booking is one reservation made by one customer for one period. It may
+-- cover SEVERAL rooms: the chan is sold alone or bundled with Banya #1, and a
+-- bundle has to occupy both, or the chan would stay bookable by someone else
+-- for the same hours.
+--
+-- So the customer and the period live here, and which rooms are taken lives in
+-- booking_rooms. The non-overlap rule belongs there too, because it is a
+-- statement about a room, not about a reservation.
 create table if not exists public.bookings (
   id             uuid primary key default gen_random_uuid(),
-  room_id        uuid not null references public.rooms (id) on delete restrict,
   starts_at      timestamptz not null,
   ends_at        timestamptz not null,
   customer_name  text not null,
   customer_phone text not null,
   status         public.booking_status not null default 'CONFIRMED',
 
-  -- Snapshot of the buffer setting at write time. An exclusion constraint
-  -- cannot read another table, and a per-row snapshot also stops a later
-  -- settings change from retroactively invalidating existing bookings.
+  -- Snapshot of the buffer setting at write time. A per-row snapshot stops a
+  -- later settings change from retroactively invalidating existing bookings.
   buffer_minutes integer not null default 0,
-
-  -- The session plus its own trailing buffer, maintained by a trigger.
-  --
-  -- This exists because the exclusion constraint below needs an IMMUTABLE
-  -- expression, and `ends_at + make_interval(...)` is only STABLE: adding an
-  -- interval to a timestamptz depends on the session time zone, so PostgreSQL
-  -- refuses it in an index. Storing the resolved range turns the constraint
-  -- into plain column references, which are immutable by definition.
-  occupied       tstzrange not null,
 
   -- Free text, e.g. "caller is still deciding". Deliberately has no effect on
   -- availability: this is what replaces the removed PENDING status.
@@ -210,39 +207,88 @@ create table if not exists public.bookings (
   constraint bookings_customer_phone_present check (length(btrim(customer_phone)) > 0)
 );
 
--- Keep `occupied` in step with the columns it is derived from. Doing it in a
--- trigger rather than asking callers to compute it means the rule "a booking
--- occupies its session plus its own trailing buffer" is stated exactly once.
-create or replace function private.set_booking_occupied()
+create index if not exists bookings_starts_idx on public.bookings (starts_at);
+create index if not exists bookings_active_starts_idx
+  on public.bookings (starts_at) where status <> 'CANCELLED';
+
+drop trigger if exists bookings_touch_updated_at on public.bookings;
+create trigger bookings_touch_updated_at before update on public.bookings
+  for each row execute function private.touch_updated_at();
+
+-- ---------------------------------------------------------------------------
+-- booking_rooms: which rooms a booking occupies
+-- ---------------------------------------------------------------------------
+
+-- occupied and is_active are copies of what the parent booking implies. They
+-- are denormalised on purpose: an exclusion constraint can only read the row
+-- it is defined on, so the range and the active flag have to be here. Triggers
+-- keep them in step, and nothing outside those triggers should write them.
+create table if not exists public.booking_rooms (
+  id         uuid primary key default gen_random_uuid(),
+  booking_id uuid not null references public.bookings (id) on delete cascade,
+  room_id    uuid not null references public.rooms (id) on delete restrict,
+  occupied   tstzrange not null,
+  is_active  boolean not null default true,
+
+  constraint booking_rooms_unique_room unique (booking_id, room_id)
+);
+
+create index if not exists booking_rooms_booking_id_idx on public.booking_rooms (booking_id);
+create index if not exists booking_rooms_room_id_idx on public.booking_rooms (room_id);
+
+-- Derive the child row from its parent, so a caller supplies only the pairing.
+create or replace function private.set_booking_room_derived()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+declare
+  b public.bookings%rowtype;
+begin
+  select * into b from public.bookings where id = new.booking_id;
+  if not found then
+    raise exception 'booking % does not exist', new.booking_id;
+  end if;
+
+  new.occupied := tstzrange(
+    b.starts_at,
+    b.ends_at + make_interval(mins => b.buffer_minutes),
+    '[)'
+  );
+  new.is_active := b.status <> 'CANCELLED';
+  return new;
+end;
+$$;
+
+drop trigger if exists booking_rooms_set_derived on public.booking_rooms;
+create trigger booking_rooms_set_derived
+  before insert on public.booking_rooms
+  for each row execute function private.set_booking_room_derived();
+
+-- Moving or cancelling a booking must move or release every room it holds.
+create or replace function private.sync_booking_rooms()
 returns trigger
 language plpgsql
 set search_path = ''
 as $$
 begin
-  -- The bookings_ends_after_starts check says the same thing, but a BEFORE
-  -- trigger runs first, so without this guard the caller would see
-  -- "range lower bound must be less than or equal to range upper bound"
-  -- instead of something they can act on.
-  if new.ends_at <= new.starts_at then
-    raise exception 'booking must end after it starts (got % to %)',
-      new.starts_at, new.ends_at
-      using errcode = 'check_violation';
-  end if;
-
-  new.occupied := tstzrange(
-    new.starts_at,
-    new.ends_at + make_interval(mins => new.buffer_minutes),
-    '[)'
-  );
-  return new;
+  update public.booking_rooms br
+     set occupied = tstzrange(
+           new.starts_at,
+           new.ends_at + make_interval(mins => new.buffer_minutes),
+           '[)'
+         ),
+         is_active = (new.status <> 'CANCELLED')
+   where br.booking_id = new.id;
+  return null;
 end;
 $$;
 
-drop trigger if exists bookings_set_occupied on public.bookings;
-create trigger bookings_set_occupied
-  before insert or update of starts_at, ends_at, buffer_minutes
+drop trigger if exists bookings_sync_rooms on public.bookings;
+create trigger bookings_sync_rooms
+  after update of starts_at, ends_at, buffer_minutes, status
   on public.bookings
-  for each row execute function private.set_booking_occupied();
+  for each row execute function private.sync_booking_rooms();
 
 -- No two active bookings may overlap WITHIN THE SAME ROOM.
 --
@@ -250,30 +296,25 @@ create trigger bookings_set_occupied
 -- block that time in every room. It is also why btree_gist is required --
 -- GiST handles && on a range natively but not = on a uuid.
 --
+-- The range is stored rather than computed because an index expression must be
+-- IMMUTABLE, and `timestamptz + interval` is only STABLE: month and day
+-- arithmetic depends on the session time zone, so PostgreSQL refuses it.
+--
 -- Each booking pads only its tail. That is symmetric and sufficient: the gap
 -- before a booking is protected by the trailing pad of whatever precedes it.
 -- The '[)' bounds let a session start exactly when the previous buffer ends.
 do $$
 begin
   if not exists (
-    select 1 from pg_constraint where conname = 'bookings_no_overlap'
+    select 1 from pg_constraint where conname = 'booking_rooms_no_overlap'
   ) then
-    alter table public.bookings add constraint bookings_no_overlap
+    alter table public.booking_rooms add constraint booking_rooms_no_overlap
       exclude using gist (
         room_id with =,
         occupied with &&
-      ) where (status <> 'CANCELLED');
+      ) where (is_active);
   end if;
 end $$;
-
-create index if not exists bookings_room_starts_idx
-  on public.bookings (room_id, starts_at);
-create index if not exists bookings_active_starts_idx
-  on public.bookings (starts_at) where status <> 'CANCELLED';
-
-drop trigger if exists bookings_touch_updated_at on public.bookings;
-create trigger bookings_touch_updated_at before update on public.bookings
-  for each row execute function private.touch_updated_at();
 
 -- ---------------------------------------------------------------------------
 -- row level security
@@ -283,11 +324,13 @@ alter table public.rooms          enable row level security;
 alter table public.opening_hours  enable row level security;
 alter table public.closures       enable row level security;
 alter table public.bookings       enable row level security;
+alter table public.booking_rooms  enable row level security;
 
 alter table public.rooms          force row level security;
 alter table public.opening_hours  force row level security;
 alter table public.closures       force row level security;
 alter table public.bookings       force row level security;
+alter table public.booking_rooms  force row level security;
 
 -- Visitors may read a room only while it is visible. A hidden room must not be
 -- enumerable: "hidden" has to mean hidden at the policy level, not merely
@@ -328,5 +371,10 @@ create policy closures_admin_all on public.closures
 -- else, so a public query is structurally incapable of returning a name.
 drop policy if exists bookings_admin_all on public.bookings;
 create policy bookings_admin_all on public.bookings
+  for all to authenticated
+  using ((select private.is_admin())) with check ((select private.is_admin()));
+
+drop policy if exists booking_rooms_admin_all on public.booking_rooms;
+create policy booking_rooms_admin_all on public.booking_rooms
   for all to authenticated
   using ((select private.is_admin())) with check ((select private.is_admin()));

@@ -136,6 +136,35 @@ create table if not exists public.packages (
 create index if not exists packages_visible_sort_idx
   on public.packages (sort_order) where is_visible;
 
+-- Which rooms a package occupies when it is booked.
+--
+-- The chan is sold alone or bundled with Banya #1, and a bundle must take both
+-- rooms off the calendar. Empty here means the package is a marketing card
+-- rather than a bookable bundle -- "Banya #1 or Banya #2" offers a choice, and
+-- a choice is resolved by the administrator, not by the schema.
+create table if not exists public.package_rooms (
+  package_id uuid not null references public.packages (id) on delete cascade,
+  room_id    uuid not null references public.rooms (id) on delete cascade,
+  primary key (package_id, room_id)
+);
+
+create index if not exists package_rooms_room_id_idx on public.package_rooms (room_id);
+
+-- A booking may record which package was sold. It stays nullable: the
+-- administrator can enter a plain room booking with no package at all, and
+-- deleting a package must not delete its history.
+do $$
+begin
+  if not exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'bookings' and column_name = 'package_id'
+  ) then
+    alter table public.bookings
+      add column package_id uuid references public.packages (id) on delete set null;
+    create index bookings_package_id_idx on public.bookings (package_id);
+  end if;
+end $$;
+
 drop trigger if exists packages_touch_updated_at on public.packages;
 create trigger packages_touch_updated_at before update on public.packages
   for each row execute function private.touch_updated_at();
@@ -267,6 +296,18 @@ create trigger settings_touch_updated_at before update on public.settings
 -- ---------------------------------------------------------------------------
 -- row level security
 -- ---------------------------------------------------------------------------
+
+alter table public.package_rooms  enable row level security;
+alter table public.package_rooms  force row level security;
+
+drop policy if exists package_rooms_public_read on public.package_rooms;
+create policy package_rooms_public_read on public.package_rooms
+  for select to anon, authenticated using (true);
+
+drop policy if exists package_rooms_admin_all on public.package_rooms;
+create policy package_rooms_admin_all on public.package_rooms
+  for all to authenticated
+  using ((select private.is_admin())) with check ((select private.is_admin()));
 
 alter table public.media          enable row level security;
 alter table public.pages          enable row level security;
