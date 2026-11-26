@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { Check, Loader2, Phone } from "lucide-react";
 
-import { cn } from "@/shared/lib";
+import { cn, formatHryvnia } from "@/shared/lib";
 import {
   Button,
   ButtonLink,
@@ -18,7 +18,12 @@ import {
 import { getDayAvailability, placeHold, type DayAvailability } from "../model/actions";
 import { formatVenueDate, type Slot } from "../model/slots";
 
-export type BookingRoom = { slug: string; name: string };
+export type BookingRoom = {
+  slug: string;
+  name: string;
+  /** Minor units per hour; null when the card carries no price of its own. */
+  pricePerHour: number | null;
+};
 
 /** Local date as YYYY-MM-DD, which is what the schedule function expects. */
 function toIsoDate(date: Date): string {
@@ -147,13 +152,23 @@ export function BookingCalendar({
               type="button"
               onClick={() => chooseRoom(room.slug)}
               className={cn(
-                "flex h-full items-center justify-center border px-4 py-4 text-center text-[15px] leading-tight transition-colors",
+                "flex h-full flex-col items-center justify-center gap-1 border px-4 py-4 text-center leading-tight transition-colors",
                 room.slug === roomSlug
                   ? "border-bronze bg-sage-deep/40 text-foreground"
                   : "border-bronze/25 text-muted-foreground hover:border-bronze/60",
               )}
             >
-              {room.name}
+              <span className="text-[15px]">{room.name}</span>
+              {room.pricePerHour !== null ? (
+                <span
+                  className={cn(
+                    "text-[13px]",
+                    room.slug === roomSlug ? "text-bronze" : "text-muted-foreground/70",
+                  )}
+                >
+                  від {formatHryvnia(room.pricePerHour)} / год
+                </span>
+              ) : null}
             </button>
           ))}
         </div>

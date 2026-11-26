@@ -164,7 +164,11 @@ export async function BookingCtaBlock({ content }: { content: BlockContent["book
 
   // Only cards that actually take bookings. A card can be visible and still be
   // closed for the season, and offering it here would waste a visitor's time.
-  const bookable = locations.map((l) => ({ slug: l.slug, name: l.name }));
+  const bookable = locations.map((l) => ({
+    slug: l.slug,
+    name: l.name,
+    pricePerHour: l.pricePerHour,
+  }));
 
   return (
     <Section>
