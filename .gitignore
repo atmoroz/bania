@@ -57,3 +57,4 @@ env.*.local
 
 # claude code local-only settings (may hold machine-specific config)
 .claude/settings.local.json
+.project-documentation/

@@ -688,6 +688,7 @@ export type Database = {
     }
     Functions: {
       expire_stale_holds: { Args: never; Returns: number }
+      is_admin: { Args: never; Returns: boolean }
       place_hold: {
         Args: {
           p_room_slug: string
