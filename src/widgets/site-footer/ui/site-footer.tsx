@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Check, Clock, Mail, MapPin, Phone } from "lucide-react";
 
 import { getNavigation } from "@/entities/page-block";
-import { getSettings, getSocialLinks, SocialIcon, socialLabel } from "@/entities/settings";
+import { getSettings, getSocialLinks, SocialBadge, socialLabel } from "@/entities/settings";
 import { Container, LogoMark } from "@/shared/ui";
 
 const etiquette = [
@@ -37,20 +37,24 @@ export async function SiteFooter({ bare = false }: { bare?: boolean } = {}) {
               them, each with its own mark. One list from the database
               rather than a column and an icon chosen in the markup. */}
           {social.length > 0 ? (
-            <ul className="mt-6 flex flex-col gap-3">
-              {social.map((link) => (
-                <li key={link.id}>
-                  <a
-                    href={link.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-foreground hover:text-bronze inline-flex items-center gap-2 text-[15px] transition-colors"
-                  >
-                    <SocialIcon kind={link.kind} className="size-4" />
-                    {link.label ?? socialLabel[link.kind]}
-                  </a>
-                </li>
-              ))}
+            <ul className="mt-6 flex flex-wrap gap-3">
+              {social.map((link) => {
+                const name = link.label ?? socialLabel[link.kind];
+                return (
+                  <li key={link.id}>
+                    <a
+                      href={link.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label={name}
+                      title={name}
+                      className="group/social block"
+                    >
+                      <SocialBadge kind={link.kind} />
+                    </a>
+                  </li>
+                );
+              })}
             </ul>
           ) : null}
         </div>

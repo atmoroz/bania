@@ -1,5 +1,7 @@
 import { Link2 } from "lucide-react";
 
+import { cn } from "@/shared/lib";
+
 /**
  * The networks a Ukrainian bathhouse is actually found on.
  *
@@ -79,5 +81,32 @@ export function SocialIcon({
     >
       <path d={path} />
     </svg>
+  );
+}
+
+/**
+ * The mark in the frame the owner drew for it: a dark rounded tile with a
+ * bronze edge and a dashed ring inside, the same device as the emblem.
+ *
+ * Built in CSS around the vector marks rather than from the four PNGs it
+ * was drawn as. The owner can add a network in the panel at any time, and
+ * there is no picture for Facebook, WhatsApp or YouTube — a footer where
+ * half the badges match and half do not is worse than one that is made the
+ * same way throughout. It also scales, and takes its colour from the theme.
+ */
+export function SocialBadge({ kind, className }: { kind: SocialKind; className?: string }) {
+  return (
+    <span
+      className={cn(
+        "border-bronze/60 bg-surface-lowest text-bronze group-hover/social:border-bronze group-hover/social:text-foreground relative flex size-11 shrink-0 items-center justify-center rounded-2xl border transition-colors",
+        className,
+      )}
+    >
+      <span
+        aria-hidden
+        className="border-bronze/30 pointer-events-none absolute inset-1 rounded-xl border border-dashed"
+      />
+      <SocialIcon kind={kind} className="size-5" />
+    </span>
   );
 }

@@ -193,7 +193,8 @@ export function SettingsEditor({ initial }: { initial: VenueConfig }) {
 
                 <div className="min-w-[220px] flex-1">
                   <TextField
-                    label="Посилання"
+                    label="Посилання або нік"
+                    hint="Можна просто @нік — адреса збереться сама."
                     value={link.url}
                     onChange={(v) => setSocial(i, { url: v })}
                   />

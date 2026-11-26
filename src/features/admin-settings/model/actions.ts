@@ -54,6 +54,42 @@ export type VenueConfig = {
 
 export type SettingsResult = { ok: true } | { ok: false; message: string };
 
+/**
+ * A handle where a link is expected, turned into the link.
+ *
+ * The owner knows the venue as "@banya_staraya_doroga", not as a URL, and
+ * typing the wrong one is how a Telegram button ends up opening a web page
+ * that then asks to open Telegram. Anything that already looks like an
+ * address is left exactly as it is.
+ */
+function asUrl(kind: SocialKind, value: string): string {
+  const text = value.trim();
+  if (text === "" || /^[a-z][a-z0-9+.-]*:/i.test(text)) return text;
+
+  const handle = text.replace(/^@/, "");
+  const digits = text.replace(/[^\d]/g, "");
+
+  switch (kind) {
+    case "telegram":
+      return `https://t.me/${handle}`;
+    case "instagram":
+      return `https://instagram.com/${handle}`;
+    case "tiktok":
+      return `https://tiktok.com/@${handle}`;
+    case "facebook":
+      return `https://facebook.com/${handle}`;
+    case "youtube":
+      return `https://youtube.com/@${handle}`;
+    // These two are reached by telephone number, not by name.
+    case "whatsapp":
+      return digits ? `https://wa.me/${digits}` : text;
+    case "viber":
+      return digits ? `viber://chat?number=%2B${digits}` : text;
+    default:
+      return text;
+  }
+}
+
 async function requireAdmin() {
   const admin = await getAdmin();
   if (!admin) throw new Error("Not authorised");
@@ -178,7 +214,7 @@ export async function saveVenueConfig(config: VenueConfig): Promise<SettingsResu
         .map((l) => ({
           id: l.id,
           kind: l.kind,
-          url: l.url,
+          url: asUrl(l.kind, l.url),
           label: l.label,
           is_visible: l.isVisible,
         })),
