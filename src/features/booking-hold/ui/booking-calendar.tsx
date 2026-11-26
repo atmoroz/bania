@@ -20,6 +20,7 @@ import {
   DialogContent,
   DialogDescription,
   DialogTitle,
+  ScrollFade,
 } from "@/shared/ui";
 
 import { getDayAvailability, placeHold, type DayAvailability } from "../model/actions";
@@ -276,48 +277,50 @@ export function BookingCalendar({
         ) : availability && !availability.open ? (
           <p className="text-muted-foreground mt-6 text-[15px]">{availability.reason}</p>
         ) : (
-          <ul
-            ref={listRef}
-            className="border-bronze/10 relative mt-5 flex max-h-[380px] min-h-0 flex-1 flex-col gap-3 overflow-y-auto border-y py-3 lg:max-h-none"
-          >
-            {slots.map((slot, index) => {
-              const isSelected = selected.includes(slot.startsAt);
-              const isFirstOpen = index === firstOpenIndex;
-              return (
-                <li key={slot.startsAt} ref={isFirstOpen ? firstOpenRef : null} className="shrink-0">
-                  <button
-                    type="button"
-                    onClick={() => toggle(slot)}
-                    disabled={slot.state !== "free"}
-                    aria-pressed={isSelected}
-                    className={cn(
-                      "flex w-full items-center justify-between border px-5 py-4 text-left transition-colors",
-                      stateStyles[slot.state],
-                      isSelected && "border-bronze bg-sage-deep/40",
-                    )}
-                  >
-                    <span className="flex items-center gap-3 text-[15px]">
-                      {isSelected ? (
-                        <Check className="text-bronze size-4" aria-hidden />
-                      ) : (
-                        <span
-                          className={cn(
-                            "size-1.5 rounded-full",
-                            slot.state === "free" ? "bg-sage" : "bg-muted-foreground/50",
-                          )}
-                          aria-hidden
-                        />
+          <ScrollFade scrollRef={listRef} className="border-bronze/10 mt-5 border-y">
+            <ul
+              ref={listRef}
+              className="relative flex max-h-[380px] min-h-0 flex-1 flex-col gap-3 overflow-y-auto py-3 lg:max-h-none"
+            >
+              {slots.map((slot, index) => {
+                const isSelected = selected.includes(slot.startsAt);
+                const isFirstOpen = index === firstOpenIndex;
+                return (
+                  <li key={slot.startsAt} ref={isFirstOpen ? firstOpenRef : null} className="shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => toggle(slot)}
+                      disabled={slot.state !== "free"}
+                      aria-pressed={isSelected}
+                      className={cn(
+                        "flex w-full items-center justify-between border px-5 py-4 text-left transition-colors",
+                        stateStyles[slot.state],
+                        isSelected && "border-bronze bg-sage-deep/40",
                       )}
-                      {slot.label}
-                    </span>
-                    <span className="label-caps text-muted-foreground">
-                      {stateLabels[slot.state]}
-                    </span>
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
+                    >
+                      <span className="flex items-center gap-3 text-[15px]">
+                        {isSelected ? (
+                          <Check className="text-bronze size-4" aria-hidden />
+                        ) : (
+                          <span
+                            className={cn(
+                              "size-1.5 rounded-full",
+                              slot.state === "free" ? "bg-sage" : "bg-muted-foreground/50",
+                            )}
+                            aria-hidden
+                          />
+                        )}
+                        {slot.label}
+                      </span>
+                      <span className="label-caps text-muted-foreground">
+                        {stateLabels[slot.state]}
+                      </span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          </ScrollFade>
         )}
 
         {holdError ? (

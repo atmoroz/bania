@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { Check, Loader2, Plus, X } from "lucide-react";
 
-import { cn, formatVenueDate, scrollChildToTop } from "@/shared/lib";
+import { cn, formatVenueDate, scrollChildToTop, useMatchedHeight } from "@/shared/lib";
 import {
   Button,
   Calendar,
@@ -11,6 +11,7 @@ import {
   Dialog,
   DialogContent,
   DialogTitle,
+  ScrollFade,
 } from "@/shared/ui";
 
 import {
@@ -61,6 +62,12 @@ export function AdminBookingCalendar({ rooms }: { rooms: AdminRoom[] }) {
 
   const listRef = useRef<HTMLUListElement>(null);
   const firstOpenRef = useRef<HTMLLIElement>(null);
+  const leftColumnRef = useRef<HTMLDivElement>(null);
+  const rightColumnRef = useRef<HTMLDivElement>(null);
+
+  // Same reason as the public calendar: a grid row takes its tallest item, so
+  // without this the long list sets the height and the calendar trails above.
+  useMatchedHeight(leftColumnRef, rightColumnRef);
 
   useEffect(() => {
     startLoading(async () => setDay(await getAdminDay(roomSlug, isoDate)));
@@ -116,8 +123,8 @@ export function AdminBookingCalendar({ rooms }: { rooms: AdminRoom[] }) {
   }
 
   return (
-    <div className="grid gap-10 lg:grid-cols-[320px_minmax(0,1fr)] lg:gap-14">
-      <div>
+    <div className="grid items-stretch gap-10 lg:grid-cols-[320px_minmax(0,1fr)] lg:gap-14">
+      <div ref={leftColumnRef}>
         <p className="label-caps text-bronze">Локація</p>
         <div className="mt-4 grid gap-2">
           {rooms.map((room) => (
@@ -143,7 +150,7 @@ export function AdminBookingCalendar({ rooms }: { rooms: AdminRoom[] }) {
         </Card>
       </div>
 
-      <div>
+      <div ref={rightColumnRef} className="flex min-h-0 flex-col">
         <div className="flex items-baseline justify-between gap-4">
           <p className="font-display text-[22px]">{formatVenueDate(date.toISOString())}</p>
           {isLoading ? (
@@ -156,66 +163,68 @@ export function AdminBookingCalendar({ rooms }: { rooms: AdminRoom[] }) {
         {day && !day.open ? (
           <p className="text-muted-foreground mt-6 text-[15px]">{day.reason}</p>
         ) : (
-          <ul
-            ref={listRef}
-            className="border-bronze/10 relative mt-6 flex max-h-[420px] flex-col gap-3 overflow-y-auto border-y py-3 lg:max-h-[600px]"
-          >
-            {slots.map((slot, index) => (
-              <li
-                key={slot.startsAt}
-                ref={index === firstOpenIndex ? firstOpenRef : null}
-                className={cn("flex shrink-0 flex-col gap-3 border p-4 md:flex-row md:items-center md:justify-between", stateStyle[slot.state])}
-              >
-                <div>
-                  <p className="text-[15px]">{slot.label}</p>
-                  <p className="text-muted-foreground mt-1 text-[13px]">
-                    {stateLabel[slot.state]}
-                    {slot.booking?.customerName
-                      ? ` · ${slot.booking.customerName}, ${slot.booking.customerPhone}`
-                      : ""}
-                    {slot.booking?.note ? ` · ${slot.booking.note}` : ""}
-                  </p>
-                </div>
+          <ScrollFade scrollRef={listRef} className="border-bronze/10 mt-6 border-y">
+            <ul
+              ref={listRef}
+              className="relative flex max-h-[420px] min-h-0 flex-1 flex-col gap-3 overflow-y-auto py-3 lg:max-h-none"
+            >
+              {slots.map((slot, index) => (
+                <li
+                  key={slot.startsAt}
+                  ref={index === firstOpenIndex ? firstOpenRef : null}
+                  className={cn("flex shrink-0 flex-col gap-3 border p-4 md:flex-row md:items-center md:justify-between", stateStyle[slot.state])}
+                >
+                  <div>
+                    <p className="text-[15px]">{slot.label}</p>
+                    <p className="text-muted-foreground mt-1 text-[13px]">
+                      {stateLabel[slot.state]}
+                      {slot.booking?.customerName
+                        ? ` · ${slot.booking.customerName}, ${slot.booking.customerPhone}`
+                        : ""}
+                      {slot.booking?.note ? ` · ${slot.booking.note}` : ""}
+                    </p>
+                  </div>
 
-                <div className="flex shrink-0 gap-2">
-                  {slot.state === "pending" ? (
-                    <Button
-                      onClick={() => setDialog({ kind: "confirm", slot })}
-                      className="px-4 py-2"
-                    >
-                      <Check className="size-4" aria-hidden /> Підтвердити
-                    </Button>
-                  ) : null}
+                  <div className="flex shrink-0 gap-2">
+                    {slot.state === "pending" ? (
+                      <Button
+                        onClick={() => setDialog({ kind: "confirm", slot })}
+                        className="px-4 py-2"
+                      >
+                        <Check className="size-4" aria-hidden /> Підтвердити
+                      </Button>
+                    ) : null}
 
-                  {slot.state === "free" ? (
-                    <Button
-                      variant="ghost"
-                      onClick={() => setDialog({ kind: "create", slot })}
-                      className="px-4 py-2"
-                    >
-                      <Plus className="size-4" aria-hidden /> Забронювати
-                    </Button>
-                  ) : null}
+                    {slot.state === "free" ? (
+                      <Button
+                        variant="ghost"
+                        onClick={() => setDialog({ kind: "create", slot })}
+                        className="px-4 py-2"
+                      >
+                        <Plus className="size-4" aria-hidden /> Забронювати
+                      </Button>
+                    ) : null}
 
-                  {slot.booking ? (
-                    <Button
-                      variant="ghost"
-                      disabled={busyId === slot.booking.id}
-                      onClick={() => onCancel(slot)}
-                      className="px-4 py-2"
-                    >
-                      {busyId === slot.booking.id ? (
-                        <Loader2 className="size-4 animate-spin" aria-hidden />
-                      ) : (
-                        <X className="size-4" aria-hidden />
-                      )}
-                      Скасувати
-                    </Button>
-                  ) : null}
-                </div>
-              </li>
-            ))}
-          </ul>
+                    {slot.booking ? (
+                      <Button
+                        variant="ghost"
+                        disabled={busyId === slot.booking.id}
+                        onClick={() => onCancel(slot)}
+                        className="px-4 py-2"
+                      >
+                        {busyId === slot.booking.id ? (
+                          <Loader2 className="size-4 animate-spin" aria-hidden />
+                        ) : (
+                          <X className="size-4" aria-hidden />
+                        )}
+                        Скасувати
+                      </Button>
+                    ) : null}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </ScrollFade>
         )}
       </div>
 
