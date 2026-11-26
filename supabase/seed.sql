@@ -13,7 +13,7 @@ insert into public.settings (
   $q$https://maps.google.com/?q=Банний+комплекс+Стара+Дорога$q$,
   $q$@staradoroga$q$, $q$https://instagram.com/staradoroga$q$,
   $q$Щоденно 09:00 — 23:00$q$,
-  60, 0, 60
+  60, 0, 120
 )
 on conflict (id) do update set
   site_title = excluded.site_title, wordmark = excluded.wordmark,

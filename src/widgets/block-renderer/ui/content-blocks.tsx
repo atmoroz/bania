@@ -6,6 +6,7 @@ import type { BlockContent } from "@/entities/page-block";
 import { getPhotos, PhotoTile } from "@/entities/photo";
 import { getReviews, ReviewCard } from "@/entities/review";
 import { getSettings } from "@/entities/settings";
+import { BookingCalendar } from "@/features/booking-hold";
 import { ButtonLink, Card, Section, SectionHeading } from "@/shared/ui";
 
 export async function LocationsBlock({ content }: { content: BlockContent["locations"] }) {
@@ -160,42 +161,32 @@ export async function ContactsBlock({ content }: { content: BlockContent["contac
 
 export async function BookingCtaBlock({ content }: { content: BlockContent["booking_cta"] }) {
   const [settings, locations] = await Promise.all([getSettings(), getLocations()]);
+
+  // Only cards that actually take bookings. A card can be visible and still be
+  // closed for the season, and offering it here would waste a visitor's time.
+  const bookable = locations.map((l) => ({ slug: l.slug, name: l.name }));
+
   return (
     <Section>
       <SectionHeading eyebrow={content.eyebrow} title={content.title} lead={content.lead} />
 
-      <Card className="mt-12 flex flex-col items-start gap-6 p-8 md:p-12">
-        <Clock className="text-bronze size-8" aria-hidden />
-        <div>
-          <h2 className="font-display text-[28px] leading-9">Календар у розробці</h2>
-          {content.note ? (
-            <p className="text-muted-foreground mt-3 max-w-xl text-[15px] leading-6">
-              {content.note}
-            </p>
-          ) : null}
-        </div>
-        <ButtonLink href={`tel:${settings.phone_e164}`}>
-          <Phone className="size-4" aria-hidden />
-          {settings.phone_display}
-        </ButtonLink>
-      </Card>
-
-      <div className="mt-16">
-        <p className="label-caps text-bronze">Що можна забронювати</p>
-        <ul className="border-bronze/15 mt-6 flex flex-col border-t">
-          {locations.map((l) => (
-            <li
-              key={l.slug}
-              className="border-bronze/15 flex flex-col gap-1 border-b py-5 sm:flex-row sm:items-baseline sm:justify-between"
-            >
-              <span className="text-[15px]">{l.name}</span>
-              {l.capacity ? (
-                <span className="text-muted-foreground text-[13px]">до {l.capacity} осіб</span>
-              ) : null}
-            </li>
-          ))}
-        </ul>
+      <div className="mt-14">
+        <BookingCalendar
+          rooms={bookable}
+          phoneDisplay={settings.phone_display}
+          phoneHref={`tel:${settings.phone_e164}`}
+        />
       </div>
+
+      {content.note ? (
+        <Card className="mt-14 flex flex-col items-start gap-5 p-7">
+          <Phone className="text-bronze size-6" aria-hidden />
+          <p className="text-muted-foreground max-w-xl text-[15px] leading-6">{content.note}</p>
+          <ButtonLink href={`tel:${settings.phone_e164}`} variant="ghost">
+            {settings.phone_display}
+          </ButtonLink>
+        </Card>
+      ) : null}
     </Section>
   );
 }

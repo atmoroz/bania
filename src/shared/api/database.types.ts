@@ -121,9 +121,10 @@ export type Database = {
         Row: {
           buffer_minutes: number
           created_at: string
-          customer_name: string
-          customer_phone: string
+          customer_name: string | null
+          customer_phone: string | null
           ends_at: string
+          hold_expires_at: string | null
           id: string
           note: string | null
           offering_id: string | null
@@ -134,9 +135,10 @@ export type Database = {
         Insert: {
           buffer_minutes?: number
           created_at?: string
-          customer_name: string
-          customer_phone: string
+          customer_name?: string | null
+          customer_phone?: string | null
           ends_at: string
+          hold_expires_at?: string | null
           id?: string
           note?: string | null
           offering_id?: string | null
@@ -147,9 +149,10 @@ export type Database = {
         Update: {
           buffer_minutes?: number
           created_at?: string
-          customer_name?: string
-          customer_phone?: string
+          customer_name?: string | null
+          customer_phone?: string | null
           ends_at?: string
+          hold_expires_at?: string | null
           id?: string
           note?: string | null
           offering_id?: string | null
@@ -667,8 +670,10 @@ export type Database = {
     Views: {
       busy_intervals: {
         Row: {
+          hold_expires_at: string | null
           occupied: unknown
           room_id: string | null
+          status: Database["public"]["Enums"]["booking_status"] | null
         }
         Relationships: [
           {
@@ -682,6 +687,15 @@ export type Database = {
       }
     }
     Functions: {
+      expire_stale_holds: { Args: never; Returns: number }
+      place_hold: {
+        Args: {
+          p_room_slug: string
+          p_slot_minutes?: number
+          p_slot_starts: string[]
+        }
+        Returns: string[]
+      }
       room_schedule_for_date: {
         Args: { p_date: string; p_room_id: string }
         Returns: {
@@ -706,7 +720,7 @@ export type Database = {
         | "contacts"
         | "booking_cta"
         | "rich_text"
-      booking_status: "CONFIRMED" | "CANCELLED"
+      booking_status: "PENDING" | "CONFIRMED" | "CANCELLED"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -849,7 +863,7 @@ export const Constants = {
         "booking_cta",
         "rich_text",
       ],
-      booking_status: ["CONFIRMED", "CANCELLED"],
+      booking_status: ["PENDING", "CONFIRMED", "CANCELLED"],
     },
   },
 } as const
