@@ -36,33 +36,41 @@ async function AdminShell({ children }: { children: ReactNode }) {
   return (
     <div className="flex min-h-dvh flex-col">
       <header className="border-bronze/15 bg-surface-lowest border-b">
-        <Container className="flex h-16 items-center justify-between gap-6">
-          <div className="flex items-center gap-8">
-            <Link href="/admin" className="label-caps text-bronze">
+        <Container className="flex h-16 items-center justify-between gap-3 sm:gap-6">
+          <div className="flex min-w-0 items-center gap-4 sm:gap-8">
+            <Link href="/admin" className="label-caps text-bronze shrink-0">
               Адмінпанель
             </Link>
-            <nav className="flex items-center gap-6">
+            {/* Scrolls rather than overflows: one tab fits a phone today,
+                and the tabs still to come would not. */}
+            <nav className="flex min-w-0 items-center gap-4 overflow-x-auto sm:gap-6">
               {tabs.map((tab) => (
                 <Link
                   key={tab.href}
                   href={tab.href}
-                  className="label-caps text-muted-foreground hover:text-foreground flex items-center gap-2 transition-colors"
+                  className="label-caps text-muted-foreground hover:text-foreground flex shrink-0 items-center gap-2 transition-colors"
                 >
-                  <tab.icon className="size-4" aria-hidden />
+                  <tab.icon className="size-4 shrink-0" aria-hidden />
                   {tab.label}
                 </Link>
               ))}
             </nav>
           </div>
 
-          <div className="flex items-center gap-5">
+          <div className="flex shrink-0 items-center gap-5">
             <span className="text-muted-foreground hidden text-[13px] md:inline">
               {admin.email}
             </span>
             <form action={signOut}>
-              <Button type="submit" variant="ghost" className="px-4 py-2">
-                <LogOut className="size-4" aria-hidden />
-                Вийти
+              <Button
+                type="submit"
+                variant="ghost"
+                className="px-3 py-2 sm:px-4"
+                title="Вийти"
+              >
+                <LogOut className="size-4 shrink-0" aria-hidden />
+                <span className="hidden sm:inline">Вийти</span>
+                <span className="sr-only sm:hidden">Вийти</span>
               </Button>
             </form>
           </div>
