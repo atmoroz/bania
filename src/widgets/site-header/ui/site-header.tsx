@@ -35,7 +35,7 @@ export function SiteHeader() {
             width={44}
             height={44}
             priority
-            className="size-11 shrink-0"
+            className="size-11 shrink-0 rounded-full"
           />
           <span className="flex flex-col leading-none whitespace-nowrap">
             <span className="label-caps text-bronze">{siteConfig.wordmark}</span>

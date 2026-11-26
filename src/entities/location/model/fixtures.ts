@@ -21,8 +21,8 @@ export const locations: readonly Location[] = [
       "Чайний стіл, чайник, весь посуд та мангал",
     ],
     image: {
-      src: "/images/steam-room.png",
-      alt: "Парна Бані #1 з дерев'яними полицями та теплим світлом",
+      src: "/images/banya-1-pool.png",
+      alt: "Дерев'яна альтанка зі шторами та відкритий басейн Бані #1",
     },
     sortOrder: 1,
   },
