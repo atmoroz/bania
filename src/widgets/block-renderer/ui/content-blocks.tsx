@@ -4,7 +4,8 @@ import { AddonRow, getAddons } from "@/entities/addon";
 import { getLocations, LocationCard } from "@/entities/location";
 import type { BlockContent } from "@/entities/page-block";
 import { getPhotos, PhotoTile } from "@/entities/photo";
-import { getReviews, ReviewCard } from "@/entities/review";
+import { getReviews, ReviewCard, summarise, writtenOnly } from "@/entities/review";
+import { ReviewForm } from "@/features/review-submit";
 import { getSettings } from "@/entities/settings";
 import { BookingCalendar } from "@/features/booking-hold";
 import { ButtonLink, Card, Section, SectionHeading } from "@/shared/ui";
@@ -53,6 +54,8 @@ export async function GalleryBlock({ content }: { content: BlockContent["gallery
 
 export async function ReviewsBlock({ content }: { content: BlockContent["reviews"] }) {
   const reviews = await getReviews();
+  const written = writtenOnly(reviews);
+  const summary = summarise(reviews);
 
   // A slider is a horizontal scroller with snap points: no JavaScript, works on a
   // phone by swiping, and degrades to a plain row on a wide screen.
@@ -62,42 +65,77 @@ export async function ReviewsBlock({ content }: { content: BlockContent["reviews
     <Section className="bg-surface-low">
       <SectionHeading eyebrow={content.eyebrow} title={content.title} lead={content.lead} />
 
-      {content.summaryScore ? (
+      {/* The score is counted, not typed in. It includes ratings left without
+          a review, which are most of them, so the number matches what people
+          actually said rather than what was last written into the block. */}
+      {summary.average !== null ? (
         <Card className="mt-10 flex items-center gap-5 p-7">
           <Star className="fill-bronze text-bronze size-8 shrink-0" aria-hidden />
           <div>
             <p className="font-display text-[28px] leading-9">
-              {content.summaryScore} / {content.summaryOutOf}
+              {summary.average.toFixed(1).replace(".", ",")} / 5
             </p>
+            <p className="text-muted-foreground mt-1 text-[13px]">
+              {ratingCountLabel(summary.count)} на цьому сайті
+            </p>
+            {/* The owner's own line, kept apart from the counted figure: it
+                often refers to other places, and running the two together
+                would read as one claim about the same number. */}
             {content.summaryNote ? (
-              <p className="text-muted-foreground mt-1 text-[13px]">{content.summaryNote}</p>
+              <p className="text-muted-foreground/70 mt-1 text-[12px]">{content.summaryNote}</p>
             ) : null}
           </div>
         </Card>
       ) : null}
 
-      <div
-        className={
-          isSlider
-            ? "mt-14 -mx-5 flex snap-x snap-mandatory gap-6 overflow-x-auto px-5 pb-4 md:mx-0 md:px-0"
-            : "mt-14 grid gap-8 md:grid-cols-2"
-        }
-      >
-        {reviews.map((review) => (
-          <div
-            key={review.id}
-            className={isSlider ? "w-[85%] shrink-0 snap-start md:w-[48%]" : undefined}
-          >
-            <ReviewCard review={review} />
-          </div>
-        ))}
-      </div>
+      {written.length > 0 ? (
+        <div
+          className={
+            isSlider
+              ? "mt-14 -mx-5 flex snap-x snap-mandatory gap-6 overflow-x-auto px-5 pb-4 md:mx-0 md:px-0"
+              : "mt-14 grid gap-8 md:grid-cols-2"
+          }
+        >
+          {written.map((review) => (
+            <div
+              key={review.id}
+              className={isSlider ? "w-[85%] shrink-0 snap-start md:w-[48%]" : undefined}
+            >
+              <ReviewCard review={review} />
+            </div>
+          ))}
+        </div>
+      ) : null}
 
       {content.ctaLabel && content.ctaHref ? (
         <ButtonLink href={content.ctaHref} variant="ghost" className="mt-10">
           {content.ctaLabel}
         </ButtonLink>
       ) : null}
+    </Section>
+  );
+}
+
+/** Ukrainian counts three ways: 1 оцінка, 2 оцінки, 5 оцінок. */
+function ratingCountLabel(count: number): string {
+  const lastTwo = count % 100;
+  const last = count % 10;
+  if (lastTwo >= 11 && lastTwo <= 14) return `${count} оцінок`;
+  if (last === 1) return `${count} оцінка`;
+  if (last >= 2 && last <= 4) return `${count} оцінки`;
+  return `${count} оцінок`;
+}
+
+export function ReviewFormBlock({ content }: { content: BlockContent["review_form"] }) {
+  return (
+    <Section>
+      <SectionHeading eyebrow={content.eyebrow} title={content.title} lead={content.lead} />
+      <div className="mt-12 max-w-[640px]">
+        <ReviewForm />
+        {content.note ? (
+          <p className="text-muted-foreground mt-6 text-[13px] leading-5">{content.note}</p>
+        ) : null}
+      </div>
     </Section>
   );
 }

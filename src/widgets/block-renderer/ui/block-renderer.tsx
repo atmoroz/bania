@@ -6,6 +6,7 @@ import {
   ContactsBlock,
   GalleryBlock,
   LocationsBlock,
+  ReviewFormBlock,
   ReviewsBlock,
   RichTextBlock,
 } from "./content-blocks";
@@ -34,6 +35,8 @@ function renderBlock(block: Block) {
       return <GalleryBlock content={block.content} />;
     case "reviews":
       return <ReviewsBlock content={block.content} />;
+    case "review_form":
+      return <ReviewFormBlock content={block.content} />;
     case "contacts":
       return <ContactsBlock content={block.content} />;
     case "booking_cta":

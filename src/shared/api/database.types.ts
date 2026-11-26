@@ -412,8 +412,8 @@ export type Database = {
       }
       reviews: {
         Row: {
-          author_name: string
-          body: string
+          author_name: string | null
+          body: string | null
           context: string | null
           created_at: string
           id: string
@@ -424,8 +424,8 @@ export type Database = {
           updated_at: string
         }
         Insert: {
-          author_name: string
-          body: string
+          author_name?: string | null
+          body?: string | null
           context?: string | null
           created_at?: string
           id?: string
@@ -436,8 +436,8 @@ export type Database = {
           updated_at?: string
         }
         Update: {
-          author_name?: string
-          body?: string
+          author_name?: string | null
+          body?: string | null
           context?: string | null
           created_at?: string
           id?: string
@@ -709,6 +709,10 @@ export type Database = {
         }[]
       }
       room_units: { Args: { p_room_id: string }; Returns: string[] }
+      submit_review: {
+        Args: { p_author?: string; p_body?: string; p_rating: number }
+        Returns: undefined
+      }
     }
     Enums: {
       block_type:

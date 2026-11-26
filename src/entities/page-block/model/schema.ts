@@ -53,6 +53,7 @@ export const blockSchemas = {
     summaryNote: z.string().optional(),
   }),
   contacts: z.object(heading),
+  review_form: z.object({ ...heading, note: z.string().optional() }),
   booking_cta: z.object({ ...heading, note: z.string().optional() }),
   rich_text: z.object({ ...heading, body: z.string().optional() }),
   /** Retired: merged into `locations`. Kept so an old row cannot crash a page. */

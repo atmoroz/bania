@@ -1,13 +1,16 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Suspense, type ReactNode } from "react";
-import { CalendarDays, Loader2, LogOut } from "lucide-react";
+import { CalendarDays, Loader2, LogOut, Star } from "lucide-react";
 
 import { signOut } from "@/features/admin-auth";
 import { getAdmin } from "@/shared/api";
 import { Button, Container } from "@/shared/ui";
 
-const tabs = [{ href: "/admin/bookings", label: "Бронювання", icon: CalendarDays }];
+const tabs = [
+  { href: "/admin/bookings", label: "Бронювання", icon: CalendarDays },
+  { href: "/admin/reviews", label: "Відгуки", icon: Star },
+];
 
 /**
  * The guard for the whole admin area.
