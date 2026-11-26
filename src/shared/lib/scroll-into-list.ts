@@ -4,18 +4,20 @@
  * Scrolls the container rather than calling `scrollIntoView`, which would move
  * the page too and lose the visitor's place.
  *
- * Takes getters rather than elements, and retries across a few frames, because
- * neither the element nor its measurement is reliably there when the effect
- * runs. The list is only rendered once the data has loaded, and with a
- * transition the "loaded" state and the "no longer pending" state can land in
- * different commits — so at effect time the list may not exist yet, and a
- * frame later it may exist but not be laid out. Reading on each frame covers
- * both without guessing which one happened.
+ * Takes getters and retries across frames, because nothing here is ready when
+ * the effect runs: the list is only rendered once the data arrives, its height
+ * is set afterwards by a ResizeObserver matching the other column, and a
+ * child cannot be measured until both have happened.
+ *
+ * It checks that the scroll took, rather than assuming the assignment worked.
+ * Setting scrollTop on a list that is not yet taller than its box is silently
+ * clamped to zero, which looks exactly like success and is why this did
+ * nothing on a cold load while working on every later interaction.
  */
 export function scrollChildToTop(
   getList: () => HTMLElement | null,
   getChild: () => HTMLElement | null,
-  { offset = 8, maxFrames = 30 }: { offset?: number; maxFrames?: number } = {},
+  { offset = 8, maxFrames = 60 }: { offset?: number; maxFrames?: number } = {},
 ): () => void {
   let frame = 0;
   let cancelled = false;
@@ -25,13 +27,15 @@ export function scrollChildToTop(
 
     const list = getList();
     const child = getChild();
+    const wanted = child ? Math.max(0, child.offsetTop - offset) : 0;
 
-    // offsetTop of 0 means either "first item" or "not measured yet", and
-    // those look identical from here. Keep looking: if it really is the first
-    // item there is nothing to scroll, so retrying costs only idle frames.
-    if (list && child && child.offsetTop > 0) {
-      list.scrollTop = Math.max(0, child.offsetTop - offset);
-      return;
+    if (list && child && wanted > 0) {
+      list.scrollTop = wanted;
+
+      // Clamped to the list's own maximum, which is the right answer when the
+      // child sits near the end; anything above zero means the box is sized
+      // and the scroll landed.
+      if (list.scrollTop > 0) return;
     }
 
     if (++frame < maxFrames) requestAnimationFrame(attempt);

@@ -23,6 +23,7 @@ import {
   DialogDescription,
   DialogTitle,
   ScrollFade,
+  SlotListSkeleton,
 } from "@/shared/ui";
 
 import {
@@ -164,9 +165,13 @@ export function BookingCalendar({
    * day this does nothing; late in the day it saves scrolling past a dozen
    * hours that have already gone.
    */
+  // isLoading is a dependency, not just availability: while the hours are
+  // being fetched the list is replaced by placeholders, so the element to
+  // scroll does not exist. Re-running when it comes back means the scroll no
+  // longer depends on the retry budget outlasting the request.
   useEffect(
     () => scrollChildToTop(() => listRef.current, () => firstOpenRef.current),
-    [availability],
+    [availability, isLoading],
   );
 
   // The hold lives five minutes. The countdown is the honest part of the
@@ -340,9 +345,9 @@ export function BookingCalendar({
         <p className="text-muted-foreground mt-2 text-[13px]">{formatVenueDate(date.toISOString())}</p>
 
         {isLoading ? (
-          <p className="text-muted-foreground mt-6 flex items-center gap-2 text-[15px]">
-            <Loader2 className="size-4 animate-spin" aria-hidden /> Завантаження…
-          </p>
+          <div className="border-bronze/10 mt-5 border-y">
+            <SlotListSkeleton />
+          </div>
         ) : availability && !availability.open ? (
           <p className="text-muted-foreground mt-6 text-[15px]">{availability.reason}</p>
         ) : dayIsFull ? (

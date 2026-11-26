@@ -12,3 +12,4 @@ export {
 } from "./dialog";
 export { Eyebrow, Section, SectionHeading } from "./section";
 export { ScrollFade } from "./scroll-fade";
+export { Skeleton, SlotListSkeleton } from "./skeleton";

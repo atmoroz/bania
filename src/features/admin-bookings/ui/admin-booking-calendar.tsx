@@ -12,6 +12,7 @@ import {
   DialogContent,
   DialogTitle,
   ScrollFade,
+  SlotListSkeleton,
 } from "@/shared/ui";
 
 import {
@@ -95,7 +96,7 @@ export function AdminBookingCalendar({ rooms }: { rooms: AdminRoom[] }) {
   // part the owner can do something about.
   useEffect(
     () => scrollChildToTop(() => listRef.current, () => firstOpenRef.current),
-    [day],
+    [day, isLoading],
   );
 
   async function onCancel(slot: AdminSlot) {
@@ -173,7 +174,13 @@ export function AdminBookingCalendar({ rooms }: { rooms: AdminRoom[] }) {
           <p className="text-destructive mt-4 text-[15px]">{error}</p>
         ) : null}
 
-        {day && !day.open ? (
+        {/* Placeholder rows, not an empty frame: the owner opens this mid-call
+            and should see the list taking shape rather than a blank panel. */}
+        {!day || isLoading ? (
+          <div className="border-bronze/10 mt-6 border-y">
+            <SlotListSkeleton rows={6} />
+          </div>
+        ) : !day.open ? (
           <p className="text-muted-foreground mt-6 text-[15px]">{day.reason}</p>
         ) : (
           <ScrollFade scrollRef={listRef} className="border-bronze/10 mt-6 border-y">
