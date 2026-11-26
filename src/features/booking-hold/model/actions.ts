@@ -1,8 +1,7 @@
 "use server";
 
 import { createPublicClient } from "@/shared/api";
-
-import { buildSlots, parseRange, type BusyInterval, type Slot } from "./slots";
+import { buildSlots, parseRange, type BusyInterval, type Slot } from "@/shared/lib";
 
 export type DayAvailability =
   | { open: true; slots: Slot[] }

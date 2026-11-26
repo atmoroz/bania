@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { Check, Loader2, Phone } from "lucide-react";
 
-import { cn, formatHryvnia } from "@/shared/lib";
+import { cn, formatHryvnia, formatVenueDate, type Slot } from "@/shared/lib";
 import {
   Button,
   ButtonLink,
@@ -16,7 +16,6 @@ import {
 } from "@/shared/ui";
 
 import { getDayAvailability, placeHold, type DayAvailability } from "../model/actions";
-import { formatVenueDate, type Slot } from "../model/slots";
 
 export type BookingRoom = {
   slug: string;
