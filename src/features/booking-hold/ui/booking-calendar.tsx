@@ -32,6 +32,17 @@ function toIsoDate(date: Date): string {
   return `${y}-${m}-${d}`;
 }
 
+/**
+ * Midnight today, so "before" means "an earlier day" and not "earlier than this
+ * instant". Passing `new Date()` happens to work because react-day-picker
+ * normalises it, but that is the library's behaviour rather than our intent,
+ * and at 23:00 the difference is the whole of today.
+ */
+function startOfToday(): Date {
+  const now = new Date();
+  return new Date(now.getFullYear(), now.getMonth(), now.getDate());
+}
+
 const stateStyles: Record<Slot["state"], string> = {
   free: "border-bronze/25 hover:border-bronze hover:bg-bronze/10",
   busy: "border-bronze/10 text-muted-foreground line-through cursor-not-allowed",
@@ -178,7 +189,7 @@ export function BookingCalendar({
             mode="single"
             selected={date}
             onSelect={(d) => d && chooseDate(d)}
-            disabled={{ before: new Date() }}
+            disabled={{ before: startOfToday() }}
           />
         </Card>
       </div>
