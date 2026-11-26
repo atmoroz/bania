@@ -23,11 +23,17 @@ export function Calendar({ className, classNames, ...props }: DayPickerProps) {
       weekStartsOn={1}
       className={cn("w-full", className)}
       classNames={{
-        months: "flex flex-col",
+        // The library renders `nav` as a sibling of the month, before it,
+        // and leaves the placing to its own stylesheet — which this calendar
+        // does not load. Left alone the arrows sat in a row of their own
+        // above the month's name, with a gap under them. Positioned here
+        // instead, so the header is one line: the month on the left, the
+        // arrows on the right.
+        months: "relative flex flex-col",
         month: "w-full",
-        month_caption: "flex items-center justify-between pb-6",
+        month_caption: "mb-5 flex h-9 items-center",
         caption_label: "font-display text-[22px] leading-7 capitalize",
-        nav: "flex items-center gap-2",
+        nav: "absolute top-0 right-0 flex h-9 items-center gap-2",
         button_previous:
           "border-bronze/30 hover:border-bronze hover:bg-bronze/10 inline-flex size-9 items-center justify-center border transition-colors disabled:opacity-30",
         button_next:

@@ -53,7 +53,11 @@ async function AdminShell({ children }: { children: ReactNode }) {
 
   return (
     <div className="flex min-h-dvh flex-col">
-      <header className="border-bronze/15 bg-surface-lowest border-b">
+      {/* Sticky, like the public header: the tabs are how you move around
+          the panel, and the lists here are long enough that losing them off
+          the top means scrolling back for every move. Translucent with a
+          blur so the content reads as passing under it. */}
+      <header className="border-bronze/15 bg-surface-lowest/90 sticky top-0 z-50 border-b backdrop-blur-xl">
         {/* Two rows, always. One row held three tabs; at seven the labels
             ran into the administrator's own email on a 1568px screen, and
             the arrangement that fixed it on a phone — a scrolling strip of
