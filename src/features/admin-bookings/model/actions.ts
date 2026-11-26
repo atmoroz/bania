@@ -102,7 +102,7 @@ export async function getAdminDay(roomSlug: string, isoDate: string): Promise<Ad
   const base = buildSlots({
     opensAt: schedule.opens_at,
     closesAt: schedule.closes_at,
-    slotMinutes: settings?.slot_step_minutes ?? 120,
+    slotMinutes: settings?.slot_step_minutes ?? 60,
     busy,
     now: Date.now(),
   });
@@ -193,17 +193,28 @@ export async function createBooking(
   }
 
   const supabase = await createSupabaseServerClient();
+  const { data: step } = await supabase
+    .from("settings")
+    .select("slot_step_minutes")
+    .limit(1)
+    .single();
+
   const { data: ids, error } = await supabase.rpc("place_hold", {
     p_room_slug: roomSlug,
     p_slot_starts: slotStarts,
-    p_slot_minutes: 120,
+    p_slot_minutes: step?.slot_step_minutes ?? 60,
   });
 
   if (error) {
     const taken = error.message.includes("booking_rooms_no_overlap");
+    const tooShort = error.message.includes("must be at least");
     return {
       ok: false,
-      message: taken ? "Цей час уже зайнятий." : `Не вдалося створити бронь: ${error.message}`,
+      message: taken
+        ? "Цей час уже зайнятий."
+        : tooShort
+          ? "Бронь не може бути коротшою за мінімум. Оберіть кілька годин поспіль."
+          : `Не вдалося створити бронь: ${error.message}`,
     };
   }
 

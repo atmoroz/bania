@@ -120,6 +120,40 @@ export function BookingCalendar({
     [slots, selected],
   );
 
+  const slotMinutes = availability?.open ? availability.slotMinutes : 60;
+  const minimumMinutes = availability?.open ? availability.minimumMinutes : 120;
+  const minimumHours = Math.round(minimumMinutes / 60);
+
+  /**
+   * The minimum applies to each unbroken stretch, not to the total.
+   *
+   * Picking 10:00 and 14:00 is two hours of selection but two separate
+   * one-hour bookings, and the database refuses both. Checking runs here
+   * means the button says so before the visitor finds out the hard way.
+   */
+  const everyRunLongEnough = useMemo(() => {
+    if (selectedSlots.length === 0) return false;
+
+    const starts = selectedSlots
+      .map((s) => new Date(s.startsAt).getTime())
+      .sort((a, b) => a - b);
+
+    let runStart = starts[0] as number;
+    let previous = runStart;
+
+    for (const start of starts.slice(1)) {
+      if (start === previous + slotMinutes * 60_000) {
+        previous = start;
+        continue;
+      }
+      if (previous + slotMinutes * 60_000 - runStart < minimumMinutes * 60_000) return false;
+      runStart = start;
+      previous = start;
+    }
+
+    return previous + slotMinutes * 60_000 - runStart >= minimumMinutes * 60_000;
+  }, [selectedSlots, slotMinutes, minimumMinutes]);
+
   function toggle(slot: Slot) {
     if (slot.state !== "free") return;
     setSelected((current) =>
@@ -196,7 +230,7 @@ export function BookingCalendar({
 
       <div>
         <p className="label-caps text-bronze">
-          3. Оберіть сеанси <span className="text-muted-foreground">(по 2 години)</span>
+          3. Оберіть сеанси <span className="text-muted-foreground">(по годині, мінімум 2 поспіль)</span>
         </p>
         <p className="text-muted-foreground mt-2 text-[13px]">{formatVenueDate(date.toISOString())}</p>
 
@@ -251,23 +285,25 @@ export function BookingCalendar({
           <p className="text-destructive mt-5 text-[15px]">{holdError}</p>
         ) : null}
 
-        {selected.length > 0 ? (
-          <Button
-            onClick={confirm}
-            disabled={isHolding || holdIsLive}
-            className="mt-8 w-full disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {isHolding ? (
-              <>
-                <Loader2 className="size-4 animate-spin" aria-hidden /> Бронюємо…
-              </>
-            ) : holdIsLive ? (
-              `Бронь активна ще ${Math.floor(secondsLeft / 60)}:${String(secondsLeft % 60).padStart(2, "0")}`
-            ) : (
-              `Підтвердити (${selected.length})`
-            )}
-          </Button>
-        ) : null}
+        {/* Always shown, so the rule is visible before anything is clicked
+            rather than appearing only once a selection exists. */}
+        <Button
+          onClick={confirm}
+          disabled={isHolding || holdIsLive || !everyRunLongEnough}
+          className="mt-8 w-full disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {isHolding ? (
+            <>
+              <Loader2 className="size-4 animate-spin" aria-hidden /> Бронюємо…
+            </>
+          ) : holdIsLive ? (
+            `Бронь активна ще ${Math.floor(secondsLeft / 60)}:${String(secondsLeft % 60).padStart(2, "0")}`
+          ) : everyRunLongEnough ? (
+            `Підтвердити (${selectedSlots.length} год)`
+          ) : (
+            `Мінімум ${minimumHours} год`
+          )}
+        </Button>
       </div>
 
       <Dialog open={held !== null} onOpenChange={(open) => !open && setHeld(null)}>

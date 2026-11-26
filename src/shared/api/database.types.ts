@@ -697,6 +697,7 @@ export type Database = {
         }
         Returns: string[]
       }
+      room_minimum_minutes: { Args: { p_room_slug: string }; Returns: number }
       room_schedule_for_date: {
         Args: { p_date: string; p_room_id: string }
         Returns: {

@@ -4,7 +4,7 @@ import { createPublicClient } from "@/shared/api";
 import { buildSlots, parseRange, type BusyInterval, type Slot } from "@/shared/lib";
 
 export type DayAvailability =
-  | { open: true; slots: Slot[] }
+  | { open: true; slots: Slot[]; minimumMinutes: number; slotMinutes: number }
   | { open: false; reason: string };
 
 /**
@@ -73,12 +73,22 @@ export async function getDayAvailability(
     .limit(1)
     .single();
 
+  const slotMinutes = settings?.slot_step_minutes ?? 60;
+
+  // The minimum is read from the database rather than written into the page,
+  // so the rule the calendar states is the rule place_hold enforces.
+  const { data: minimum } = await supabase.rpc("room_minimum_minutes", {
+    p_room_slug: roomSlug,
+  });
+
   return {
     open: true,
+    minimumMinutes: minimum ?? 120,
+    slotMinutes,
     slots: buildSlots({
       opensAt: schedule.opens_at,
       closesAt: schedule.closes_at,
-      slotMinutes: settings?.slot_step_minutes ?? 120,
+      slotMinutes,
       busy,
       now: Date.now(),
     }),
@@ -106,21 +116,30 @@ export async function placeHold(
   }
 
   const supabase = createPublicClient();
+  const { data: settings } = await supabase
+    .from("settings")
+    .select("slot_step_minutes")
+    .limit(1)
+    .single();
+
   const { data, error } = await supabase.rpc("place_hold", {
     p_room_slug: roomSlug,
     p_slot_starts: slotStarts,
-    p_slot_minutes: 120,
+    p_slot_minutes: settings?.slot_step_minutes ?? 60,
   });
 
   if (error) {
     // The exclusion constraint is the expected failure here: somebody took the
     // slot between the page loading and the button being pressed.
     const taken = error.message.includes("booking_rooms_no_overlap");
+    const tooShort = error.message.includes("must be at least");
     return {
       ok: false,
       message: taken
         ? "Цей час щойно зайняли. Оновіть сторінку та оберіть інший."
-        : "Не вдалося створити бронь. Спробуйте ще раз або зателефонуйте адміністратору.",
+        : tooShort
+          ? "Кожен відрізок має бути щонайменше 2 години поспіль."
+          : "Не вдалося створити бронь. Спробуйте ще раз або зателефонуйте адміністратору.",
     };
   }
 
