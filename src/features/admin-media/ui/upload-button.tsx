@@ -14,9 +14,12 @@ import { uploadMedia } from "../model/upload";
  * native control cannot be made to match the panel, and it would be the only
  * element on the page that looks like somebody else's software.
  */
+const mb = (bytes: number) => `${(bytes / 1024 / 1024).toFixed(1)} МБ`;
+
 export function UploadButton({ onUploaded }: { onUploaded: () => void }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [errors, setErrors] = useState<string[]>([]);
+  const [saving, setSaving] = useState<string | null>(null);
   const [busy, startUpload] = useTransition();
 
   function choose(files: FileList | null) {
@@ -26,6 +29,11 @@ export function UploadButton({ onUploaded }: { onUploaded: () => void }) {
     startUpload(async () => {
       const result = await uploadMedia(list);
       setErrors(result.errors);
+      setSaving(
+        result.uploaded > 0 && result.storedBytes < result.originalBytes
+          ? `Завантажено: ${result.uploaded}. Стиснуто ${mb(result.originalBytes)} → ${mb(result.storedBytes)}.`
+          : null,
+      );
       if (result.uploaded > 0) onUploaded();
     });
 
@@ -52,6 +60,8 @@ export function UploadButton({ onUploaded }: { onUploaded: () => void }) {
         )}
         {busy ? "Завантаження…" : "Завантажити"}
       </Button>
+
+      {saving ? <p className="text-sage text-[13px]">{saving}</p> : null}
 
       {errors.length > 0 ? (
         <ul className="text-destructive flex flex-col gap-1 text-[13px]">
