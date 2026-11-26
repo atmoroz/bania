@@ -5,6 +5,7 @@ import { cn, formatHryvnia } from "@/shared/lib";
 import { ButtonLink, Card } from "@/shared/ui";
 
 import type { Location } from "../model/types";
+import { PhotoSlider } from "./photo-slider";
 
 export function LocationCard({
   location,
@@ -22,7 +23,11 @@ export function LocationCard({
         location.isFeatured && "border-bronze",
       )}
     >
-      {location.image ? (
+      {/* The card's own photographs when it has more than one — they were
+          loaded and shown nowhere until now — and the cover alone otherwise. */}
+      {location.photos.length > 1 ? (
+        <PhotoSlider photos={location.photos} alt={location.name} />
+      ) : location.image ? (
         <div className="relative aspect-[4/3] w-full">
           <Image
             src={location.image.src}
