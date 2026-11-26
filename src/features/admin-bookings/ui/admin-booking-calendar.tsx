@@ -192,9 +192,16 @@ export function AdminBookingCalendar({ rooms }: { rooms: AdminRoom[] }) {
                 <li
                   key={slot.startsAt}
                   ref={index === firstOpenIndex ? firstOpenRef : null}
-                  className={cn("flex shrink-0 flex-col gap-3 border p-4 md:flex-row md:items-center md:justify-between", stateStyle[slot.state])}
+                  // One row at every width. Stacking the button under the
+                  // hour made each slot three lines tall on a phone, and a
+                  // day is sixteen of them. The row still wraps when a slot
+                  // needs two buttons and there is no space for both.
+                  className={cn(
+                    "flex shrink-0 flex-wrap items-center justify-between gap-x-3 gap-y-2 border p-4",
+                    stateStyle[slot.state],
+                  )}
                 >
-                  <div>
+                  <div className="min-w-0">
                     <p className="text-[15px]">{slot.label}</p>
                     <p className="text-muted-foreground mt-1 text-[13px]">
                       {stateLabel[slot.state]}
@@ -206,7 +213,7 @@ export function AdminBookingCalendar({ rooms }: { rooms: AdminRoom[] }) {
                     </p>
                   </div>
 
-                  <div className="flex shrink-0 gap-2">
+                  <div className="flex shrink-0 flex-wrap justify-end gap-2">
                     {slot.state === "pending" ? (
                       <Button
                         onClick={() => openDialog({ kind: "confirm", slot })}
