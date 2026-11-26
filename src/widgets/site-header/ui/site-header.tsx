@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
@@ -23,18 +24,32 @@ export function SiteHeader() {
   return (
     <header className="border-bronze/15 bg-background/80 sticky top-0 z-50 border-b backdrop-blur-xl">
       <Container className="flex h-16 items-center justify-between gap-6 md:h-20">
-        <Link href="/" className="flex flex-col leading-none" onClick={() => setOpen(false)}>
-          <span className="label-caps text-bronze">{siteConfig.wordmark}</span>
-          <span className="font-display mt-1 text-[18px]">{siteConfig.name}</span>
+        <Link
+          href="/"
+          className="flex items-center gap-3"
+          onClick={() => setOpen(false)}
+        >
+          <Image
+            src="/images/logo.png"
+            alt=""
+            width={44}
+            height={44}
+            priority
+            className="size-11 shrink-0"
+          />
+          <span className="flex flex-col leading-none whitespace-nowrap">
+            <span className="label-caps text-bronze">{siteConfig.wordmark}</span>
+            <span className="font-display mt-1 text-[18px]">{siteConfig.name}</span>
+          </span>
         </Link>
 
-        <nav className="hidden items-center gap-8 lg:flex" aria-label="Основна навігація">
+        <nav className="hidden items-center gap-6 lg:flex xl:gap-8" aria-label="Основна навігація">
           {navigation.map((item) => (
             <Link
               key={item.href}
               href={item.href}
               className={cn(
-                "label-caps transition-colors",
+                "label-caps whitespace-nowrap transition-colors",
                 pathname === item.href
                   ? "text-bronze"
                   : "text-muted-foreground hover:text-foreground",
@@ -48,13 +63,13 @@ export function SiteHeader() {
         <div className="flex items-center gap-4">
           <a
             href={siteConfig.phone.href}
-            className="label-caps text-foreground hover:text-bronze hidden items-center gap-2 transition-colors md:flex"
+            className="label-caps text-foreground hover:text-bronze hidden items-center gap-2 whitespace-nowrap transition-colors md:flex"
           >
             <Phone className="size-4" aria-hidden />
             {siteConfig.phone.display}
           </a>
 
-          <ButtonLink href="/booking" className="hidden lg:inline-flex">
+          <ButtonLink href="/booking" className="hidden whitespace-nowrap xl:inline-flex">
             Забронювати
           </ButtonLink>
 

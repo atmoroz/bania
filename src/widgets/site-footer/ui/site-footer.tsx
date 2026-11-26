@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { Camera, Check, Clock, Mail, MapPin, Phone } from "lucide-react";
 
@@ -15,8 +16,14 @@ export function SiteFooter() {
     <footer className="border-bronze/15 bg-surface-lowest mt-auto border-t">
       <Container className="grid gap-12 py-16 md:grid-cols-2 lg:grid-cols-4">
         <div className="lg:col-span-2">
-          <p className="label-caps text-bronze">{siteConfig.wordmark}</p>
-          <p className="font-display mt-2 text-[22px]">{siteConfig.name}</p>
+          <Image
+            src="/images/logo.png"
+            alt={`Емблема банного комплексу «${siteConfig.name}»`}
+            width={112}
+            height={112}
+            className="size-28"
+          />
+          <p className="label-caps text-bronze mt-6">{siteConfig.wordmark}</p>
           <p className="text-muted-foreground mt-4 max-w-sm text-[15px] leading-6">
             Автентична культура парної та гарячих чавунних чанів на дровах з хвоєю
             в оточенні вікового лісу. Простір глибокого відновлення тіла і розуму.
