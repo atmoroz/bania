@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
-import { Menu, Phone, X } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Check, Copy, Menu, Phone, X } from "lucide-react";
 
 import { cn } from "@/shared/lib";
 import { ButtonLink, Container, LogoMark } from "@/shared/ui";
@@ -48,7 +48,11 @@ export function SiteHeaderClient({
         bare ? "relative" : "sticky top-0",
       )}
     >
-      <Container className="flex h-16 items-center justify-between gap-6 md:h-20">
+      {/* Three columns from the medium breakpoint up, so the number sits in
+          the middle of the header rather than crowding the booking button.
+          Below that it is a plain two-item row: the number lives in the
+          drawer, where there is room for it. */}
+      <Container className="flex h-16 items-center justify-between gap-6 md:grid md:h-20 md:grid-cols-[1fr_auto_1fr]">
         <Wordmark asLink={!bare} onNavigate={() => setOpen(false)}>
           <LogoMark
             id="header"
@@ -62,32 +66,31 @@ export function SiteHeaderClient({
           </span>
         </Wordmark>
 
-        <div className="flex items-center gap-4">
-          <a
-            href={phoneHref}
-            className="label-caps text-foreground hover:text-bronze hidden items-center gap-2 whitespace-nowrap transition-colors md:flex"
-          >
-            <Phone className="size-4" aria-hidden />
-            {phoneDisplay}
-          </a>
+        <div className="hidden md:flex md:justify-center">
+          <PhoneNumber display={phoneDisplay} href={phoneHref} />
+        </div>
 
+        <div className="flex items-center gap-4 md:justify-self-end">
           {bare ? null : (
-            <ButtonLink href="/booking" className="hidden whitespace-nowrap lg:inline-flex">
+            <ButtonLink
+              href="/booking"
+              className="hidden whitespace-nowrap lg:inline-flex"
+            >
               Забронювати
             </ButtonLink>
           )}
 
           {bare ? null : (
-          <button
-            type="button"
-            onClick={() => setOpen((v) => !v)}
-            className="hover:text-bronze -mr-2 p-2 transition-colors lg:hidden"
-            aria-expanded={open}
-            aria-controls="mobile-nav"
-            aria-label={open ? "Закрити меню" : "Відкрити меню"}
-          >
-            {open ? <X className="size-6" /> : <Menu className="size-6" />}
-          </button>
+            <button
+              type="button"
+              onClick={() => setOpen((v) => !v)}
+              className="hover:text-bronze -mr-2 p-2 transition-colors lg:hidden"
+              aria-expanded={open}
+              aria-controls="mobile-nav"
+              aria-label={open ? "Закрити меню" : "Відкрити меню"}
+            >
+              {open ? <X className="size-6" /> : <Menu className="size-6" />}
+            </button>
           )}
         </div>
       </Container>
@@ -144,7 +147,10 @@ export function SiteHeaderClient({
                 {item.label}
               </Link>
             ))}
-            <a href={phoneHref} className="text-bronze flex items-center gap-2 py-4 text-[15px]">
+            <a
+              href={phoneHref}
+              className="text-bronze flex items-center gap-2 py-4 text-[15px]"
+            >
               <Phone className="size-4" aria-hidden />
               {phoneDisplay}
             </a>
@@ -173,5 +179,64 @@ function Wordmark({
     </Link>
   ) : (
     <span className={className}>{children}</span>
+  );
+}
+
+/**
+ * The venue's number: a link to dial, and a button to copy.
+ *
+ * Both, because the same header is read on two kinds of device. On a phone
+ * the number is something to tap; at a desk it is something to write down,
+ * and tapping it there opens whatever the computer thinks a dialler is.
+ */
+function PhoneNumber({ display, href }: { display: string; href: string }) {
+  const [copied, setCopied] = useState(false);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // The tick must not be set on a component that has gone.
+  useEffect(
+    () => () => {
+      if (timer.current) clearTimeout(timer.current);
+    },
+    [],
+  );
+
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(display);
+    } catch {
+      // Clipboard access can be refused; the number is still a link and
+      // still selectable, so there is nothing to apologise for.
+      return;
+    }
+    setCopied(true);
+    if (timer.current) clearTimeout(timer.current);
+    timer.current = setTimeout(() => setCopied(false), 2000);
+  }
+
+  return (
+    <span className="flex items-center gap-2">
+      <a
+        href={href}
+        className="label-caps text-foreground hover:text-bronze flex items-center gap-2 whitespace-nowrap transition-colors"
+      >
+        <Phone className="size-4" aria-hidden />
+        {display}
+      </a>
+
+      <button
+        type="button"
+        onClick={copy}
+        aria-label={copied ? "Номер скопійовано" : "Скопіювати номер"}
+        title={copied ? "Скопійовано" : "Скопіювати номер"}
+        className="text-muted-foreground hover:text-bronze p-1 transition-colors"
+      >
+        {copied ? (
+          <Check className="text-sage size-4" aria-hidden />
+        ) : (
+          <Copy className="size-4" aria-hidden />
+        )}
+      </button>
+    </span>
   );
 }
