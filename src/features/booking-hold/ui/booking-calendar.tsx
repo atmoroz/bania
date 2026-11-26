@@ -53,14 +53,14 @@ function startOfToday(): Date {
 
 const stateStyles: Record<Slot["state"], string> = {
   free: "border-bronze/25 hover:border-bronze hover:bg-bronze/10",
-  busy: "border-bronze/10 text-muted-foreground line-through cursor-not-allowed",
+  busy: "border-bronze/10 text-muted-foreground cursor-not-allowed",
   held: "border-bronze/10 text-muted-foreground cursor-not-allowed",
   past: "border-bronze/10 text-muted-foreground opacity-40 cursor-not-allowed",
 };
 
 const stateLabels: Record<Slot["state"], string> = {
   free: "Вільно",
-  busy: "Зайнято",
+  busy: "Заброньовано",
   held: "Утримується",
   past: "Минув",
 };
