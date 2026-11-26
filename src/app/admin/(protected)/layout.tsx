@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Suspense, type ReactNode } from "react";
-import { CalendarDays, Loader2, LogOut, Star } from "lucide-react";
+import { CalendarDays, FileText, Loader2, LogOut, Star } from "lucide-react";
 
 import { signOut } from "@/features/admin-auth";
 import { getAdmin } from "@/shared/api";
@@ -9,6 +9,7 @@ import { Button, Container } from "@/shared/ui";
 
 const tabs = [
   { href: "/admin/bookings", label: "Бронювання", icon: CalendarDays },
+  { href: "/admin/pages", label: "Сторінки", icon: FileText },
   { href: "/admin/reviews", label: "Відгуки", icon: Star },
 ];
 
@@ -44,9 +45,12 @@ async function AdminShell({ children }: { children: ReactNode }) {
             <Link href="/admin" className="label-caps text-bronze shrink-0">
               Адмінпанель
             </Link>
-            {/* Scrolls rather than overflows: one tab fits a phone today,
-                and the tabs still to come would not. */}
-            <nav className="flex min-w-0 items-center gap-4 overflow-x-auto sm:gap-6">
+            {/* On a wide screen the tabs sit beside the wordmark. On a phone
+                they move to their own row below: three labels plus the
+                wordmark and the exit button need 536px, so sharing a line
+                would squeeze the tabs into a 165px strip to scroll inside.
+                A full-width row fits all three with room over. */}
+            <nav className="hidden items-center gap-6 sm:flex">
               {tabs.map((tab) => (
                 <Link
                   key={tab.href}
@@ -77,6 +81,21 @@ async function AdminShell({ children }: { children: ReactNode }) {
               </Button>
             </form>
           </div>
+        </Container>
+
+        <Container className="sm:hidden">
+          <nav className="-mx-5 flex items-center gap-5 overflow-x-auto px-5 pb-3">
+            {tabs.map((tab) => (
+              <Link
+                key={tab.href}
+                href={tab.href}
+                className="label-caps text-muted-foreground hover:text-foreground flex shrink-0 items-center gap-2 transition-colors"
+              >
+                <tab.icon className="size-4 shrink-0" aria-hidden />
+                {tab.label}
+              </Link>
+            ))}
+          </nav>
         </Container>
       </header>
 
