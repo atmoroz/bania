@@ -1,15 +1,25 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Copy, Plus, Trash2 } from "lucide-react";
+import { Copy, Eye, EyeOff, Plus, Trash2 } from "lucide-react";
 
-import { Button, SaveBar, SwitchField, TextField } from "@/shared/ui";
+// Straight from the module, not the slice barrel: the barrel also exports
+// the cached queries, and a "use cache" function cannot be pulled into a
+// client bundle.
+import {
+  SOCIAL_KINDS,
+  SocialIcon,
+  socialLabel,
+  type SocialKind,
+} from "@/entities/settings/ui/social-icon";
+import { Button, SaveBar, SelectField, SwitchField, TextField } from "@/shared/ui";
 
 import {
   getVenueConfig,
   saveVenueConfig,
   type Closure,
   type DayHours,
+  type SocialRow,
   type VenueConfig,
 } from "../model/actions";
 
@@ -54,6 +64,12 @@ export function SettingsEditor({ initial }: { initial: VenueConfig }) {
     setConfig({
       ...config,
       hours: config.hours.map((h) => (h.weekday === weekday ? { ...h, ...change } : h)),
+    });
+
+  const setSocial = (index: number, change: Partial<SocialRow>) =>
+    setConfig({
+      ...config,
+      social: config.social.map((l, i) => (i === index ? { ...l, ...change } : l)),
     });
 
   const setClosure = (index: number, change: Partial<Closure>) =>
@@ -139,24 +155,109 @@ export function SettingsEditor({ initial }: { initial: VenueConfig }) {
           value={config.settings.mapUrl}
           onChange={(v) => set("mapUrl", v)}
         />
-        <div className="grid gap-5 sm:grid-cols-2">
-          <TextField
-            label="Instagram, нік"
-            value={config.settings.instagramHandle}
-            onChange={(v) => set("instagramHandle", v)}
-          />
-          <TextField
-            label="Instagram, посилання"
-            value={config.settings.instagramUrl}
-            onChange={(v) => set("instagramUrl", v)}
-          />
-        </div>
         <TextField
           label="Графік одним рядком"
           hint="Те, що написано в підвалі й на контактах. Це лише текст — він не впливає на календар."
           value={config.settings.openingHoursNote}
           onChange={(v) => set("openingHoursNote", v)}
         />
+      </Group>
+
+      <Group title="Соцмережі">
+        <p className="text-muted-foreground/70 text-[12px] leading-4">
+          Показуються в підвалі сайту, у цьому порядку, кожна зі своїм значком. Підпис
+          — те, що буде видно замість назви мережі: нік або коротке пояснення.
+        </p>
+
+        {config.social.length === 0 ? (
+          <p className="text-muted-foreground text-[13px]">Поки жодної.</p>
+        ) : (
+          <ul className="flex flex-col gap-4">
+            {config.social.map((link, i) => (
+              <li
+                key={link.id ?? `new-${i}`}
+                className="border-bronze/15 flex flex-wrap items-end gap-3 border-b pb-4 last:border-b-0"
+              >
+                <span className="text-muted-foreground mb-2 shrink-0">
+                  <SocialIcon kind={link.kind} className="size-5" />
+                </span>
+
+                <div className="w-40 shrink-0">
+                  <SelectField
+                    label="Мережа"
+                    value={link.kind}
+                    options={SOCIAL_KINDS.map((kind) => ({ value: kind, label: socialLabel[kind] }))}
+                    onChange={(v) => setSocial(i, { kind: v as SocialKind })}
+                  />
+                </div>
+
+                <div className="min-w-[220px] flex-1">
+                  <TextField
+                    label="Посилання"
+                    value={link.url}
+                    onChange={(v) => setSocial(i, { url: v })}
+                  />
+                </div>
+
+                <div className="w-40">
+                  <TextField
+                    label="Підпис"
+                    value={link.label}
+                    onChange={(v) => setSocial(i, { label: v })}
+                  />
+                </div>
+
+                <div className="flex shrink-0 items-center gap-2">
+                  <button
+                    type="button"
+                    aria-label={link.isVisible ? "Приховати з сайту" : "Показати на сайті"}
+                    title={link.isVisible ? "Приховати з сайту" : "Показати на сайті"}
+                    onClick={() => setSocial(i, { isVisible: !link.isVisible })}
+                    className="border-bronze/25 hover:border-bronze border p-2 transition-colors"
+                  >
+                    {link.isVisible ? (
+                      <Eye className="size-4" aria-hidden />
+                    ) : (
+                      <EyeOff className="size-4" aria-hidden />
+                    )}
+                  </button>
+                  <button
+                    type="button"
+                    aria-label="Прибрати"
+                    title="Прибрати"
+                    onClick={() =>
+                      setConfig({
+                        ...config,
+                        social: config.social.filter((_, j) => j !== i),
+                      })
+                    }
+                    className="border-bronze/25 hover:border-bronze border p-2 transition-colors"
+                  >
+                    <Trash2 className="size-4" aria-hidden />
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+
+        <Button
+          type="button"
+          variant="ghost"
+          className="self-start px-5 py-3"
+          onClick={() =>
+            setConfig({
+              ...config,
+              social: [
+                ...config.social,
+                { id: null, kind: "telegram", url: "", label: "", isVisible: true },
+              ],
+            })
+          }
+        >
+          <Plus className="size-4" aria-hidden />
+          Додати мережу
+        </Button>
       </Group>
 
       <Group title="Правила бронювання">

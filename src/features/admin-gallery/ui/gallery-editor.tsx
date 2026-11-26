@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useLayoutEffect, useRef, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
 import { Eye, EyeOff, ImagePlus, Pencil, Trash2 } from "lucide-react";
 
 import { MediaPickerDialog } from "@/features/admin-media";
@@ -9,7 +9,7 @@ import { MediaPickerDialog } from "@/features/admin-media";
 // the preview reader, which reaches for next/headers and so cannot be pulled
 // into a client bundle.
 import { clearStaged, stageGallery } from "@/features/admin-preview/model/stage";
-import { cn } from "@/shared/lib";
+import { cn, useGridReorder } from "@/shared/lib";
 import { Button, SaveBar } from "@/shared/ui";
 
 import {
@@ -29,22 +29,6 @@ type Tile = {
   title: string;
   caption: string;
   isVisible: boolean;
-};
-
-/**
- * A drag in progress.
- *
- * `pointerX/Y` and `slotX/Y` are where it began: the tile is kept under the
- * pointer by arithmetic on those, rather than by measuring it every frame.
- * Measuring would read whatever the slide animation is doing at that
- * instant, which is exactly the feedback loop that made the grid shudder.
- */
-type Drag = {
-  key: string;
-  pointerX: number;
-  pointerY: number;
-  slotX: number;
-  slotY: number;
 };
 
 const toTiles = (photos: GalleryPhoto[]): Tile[] =>
@@ -79,217 +63,30 @@ const same = (a: Tile[], b: Tile[]) =>
 export function GalleryEditor({ initial }: { initial: GalleryPhoto[] }) {
   const [saved, setSaved] = useState(() => toTiles(initial));
   const [items, setItems] = useState(saved);
-  const [drag, setDrag] = useState<Drag | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
   const [busy, startWork] = useTransition();
 
-  const grid = useRef<HTMLUListElement>(null);
-  // Measured during a drag to find which tile the pointer is over, and after
-  // every render to animate the ones that moved.
-  const tiles = useRef(new Map<string, HTMLLIElement>());
-
-  /**
-   * The order as it is right now, outside React's render cycle.
-   *
-   * `pointerup` has to act on what is on screen, and reading the state
-   * variable there reads whatever the last committed render held — which,
-   * during a quick drag, is one move behind.
-   */
-  const order = useRef(items);
-
-  function setOrder(next: Tile[]) {
-    order.current = next;
-    setItems(next);
-  }
+  const { gridRef, tileRef, handleProps, dragging, forget } = useGridReorder(
+    items,
+    (tile) => tile.key,
+    setItems,
+  );
 
   const dirty = !same(items, saved);
-
-  // ---------------------------------------------------------------------
-  // the slide: tiles animate from where they were to where they now are
-  // ---------------------------------------------------------------------
-
-  const spots = useRef(new Map<string, { x: number; y: number }>());
-  const sliding = useRef(new Map<string, Animation>());
-  /** Where the pointer was last seen, so the held tile can be re-placed
-   *  the moment its slot moves rather than on the next pointer event. */
-  const pointer = useRef({ x: 0, y: 0 });
-
-  /** Keeps the dragged tile under the pointer, wherever its slot moved to. */
-  function follow(held: HTMLElement, at: Drag) {
-    // Pure arithmetic on layout positions: how far the pointer has
-    // travelled, less how far the tile's own slot has travelled under it.
-    const dx = pointer.current.x - at.pointerX - (held.offsetLeft - at.slotX);
-    const dy = pointer.current.y - at.pointerY - (held.offsetTop - at.slotY);
-    held.style.setProperty("transform", `translate(${dx}px, ${dy}px) scale(1.04)`);
-  }
-
-  useLayoutEffect(() => {
-    for (const [key, node] of tiles.current) {
-      // offsetLeft/offsetTop, not getBoundingClientRect: these are layout
-      // positions and ignore transforms, so a tile that is still sliding
-      // reports where it belongs rather than where it happens to be. The
-      // first version measured mid-flight and fed the error back in, and
-      // the grid shook itself apart.
-      const now = { x: node.offsetLeft, y: node.offsetTop };
-      const before = spots.current.get(key);
-      spots.current.set(key, now);
-
-      // The dragged tile is already following the pointer; animating it to
-      // its slot as well would fight that.
-      if (!before || key === drag?.key) continue;
-
-      const dx = before.x - now.x;
-      const dy = before.y - now.y;
-      if (dx === 0 && dy === 0) continue;
-
-      // One slide at a time per tile. Overlapping animations on the same
-      // element is the other half of the shudder.
-      sliding.current.get(key)?.cancel();
-      sliding.current.set(
-        key,
-        node.animate(
-          [{ transform: `translate(${dx}px, ${dy}px)` }, { transform: "translate(0, 0)" }],
-          { duration: 180, easing: "cubic-bezier(0.2, 0.8, 0.2, 1)" },
-        ),
-      );
-    }
-
-    // The held tile's own slot has just moved under it. Re-placing it here,
-    // in the same frame, is the difference between gliding and twitching.
-    const held = drag ? tiles.current.get(drag.key) : undefined;
-    if (drag && held) follow(held, drag);
-  }, [items, drag]);
-
-  // ---------------------------------------------------------------------
-  // dragging
-  // ---------------------------------------------------------------------
-
-  /** Moves one tile and returns the new order, or null if nothing moved. */
-  function moved(from: number, to: number): Tile[] | null {
-    const list = order.current;
-    if (to < 0 || to >= list.length || from === to) return null;
-    const next = [...list];
-    const [item] = next.splice(from, 1);
-    if (!item) return null;
-    next.splice(to, 0, item);
-    return next;
-  }
-
-  function onPointerDown(event: React.PointerEvent<HTMLButtonElement>, key: string) {
-    const node = tiles.current.get(key);
-    // preventScroll because focusing a tile further down would otherwise
-    // jump the page mid-drag.
-    event.currentTarget.focus({ preventScroll: true });
-    setDrag({
-      key,
-      pointerX: event.clientX,
-      pointerY: event.clientY,
-      slotX: node?.offsetLeft ?? 0,
-      slotY: node?.offsetTop ?? 0,
-    });
-  }
-
-  /**
-   * While a drag is running, the whole window reports it.
-   *
-   * Not `setPointerCapture` on the tile: capture works until it doesn't — a
-   * pointer released outside the window leaves the grid stuck mid-drag.
-   */
-  useEffect(() => {
-    if (!drag) return;
-
-    const held = tiles.current.get(drag.key);
-
-    const onMove = (event: PointerEvent) => {
-      const { clientX: x, clientY: y } = event;
-      pointer.current = { x, y };
-      const grid_ = grid.current;
-      if (!grid_) return;
-
-      // The pointer, in the same layout space the tiles report. Tiles and
-      // the grid share an offset parent, so one translation covers both --
-      // and nothing here reads a transform, so a tile in mid-slide is still
-      // hit-tested where it belongs. Testing against the animated rectangle
-      // made tiles swap back and forth under a still pointer.
-      const box = grid_.getBoundingClientRect();
-      const px = x - box.left + grid_.offsetLeft;
-      const py = y - box.top + grid_.offsetTop;
-
-      const over = order.current.findIndex((item) => {
-        if (item.key === drag.key) return false;
-        const node = tiles.current.get(item.key);
-        if (!node) return false;
-        return (
-          px >= node.offsetLeft &&
-          px <= node.offsetLeft + node.offsetWidth &&
-          py >= node.offsetTop &&
-          py <= node.offsetTop + node.offsetHeight
-        );
-      });
-
-      const current = order.current.findIndex((i) => i.key === drag.key);
-      if (over !== -1 && current !== -1) {
-        const next = moved(current, over);
-        if (next) setOrder(next);
-      }
-
-      if (held) follow(held, drag);
-    };
-
-    const onUp = () => {
-      held?.style.removeProperty("transform");
-      setDrag(null);
-    };
-
-    window.addEventListener("pointermove", onMove);
-    window.addEventListener("pointerup", onUp);
-    window.addEventListener("pointercancel", onUp);
-    return () => {
-      window.removeEventListener("pointermove", onMove);
-      window.removeEventListener("pointerup", onUp);
-      window.removeEventListener("pointercancel", onUp);
-    };
-  }, [drag]);
-
-  /** How many tiles are on a row right now, straight from the layout. */
-  function columns(): number {
-    const node = grid.current;
-    if (!node) return 1;
-    return getComputedStyle(node).gridTemplateColumns.split(" ").filter(Boolean).length;
-  }
-
-  /** Keyboard equivalent of dragging: a grid needs all four arrows. */
-  function onTileKeyDown(event: React.KeyboardEvent, index: number) {
-    const step =
-      event.key === "ArrowLeft"
-        ? -1
-        : event.key === "ArrowRight"
-          ? 1
-          : event.key === "ArrowUp"
-            ? -columns()
-            : event.key === "ArrowDown"
-              ? columns()
-              : null;
-    if (step === null) return;
-    event.preventDefault();
-
-    const next = moved(index, index + step);
-    if (next) setOrder(next);
-  }
 
   // ---------------------------------------------------------------------
   // editing and saving
   // ---------------------------------------------------------------------
 
   function patch(key: string, change: Partial<Tile>) {
-    setOrder(order.current.map((t) => (t.key === key ? { ...t, ...change } : t)));
+    setItems(items.map((t) => (t.key === key ? { ...t, ...change } : t)));
   }
 
   function save() {
     startWork(async () => {
       const result = await saveGallery(
-        order.current.map((t) => ({
+        items.map((t) => ({
           id: t.id,
           mediaId: t.mediaId,
           title: t.title,
@@ -308,9 +105,9 @@ export function GalleryEditor({ initial }: { initial: GalleryPhoto[] }) {
       // Reloaded rather than assumed: the new rows have ids now, and the
       // next save has to update them instead of inserting them again.
       const fresh = toTiles(await getGalleryPhotos());
-      spots.current.clear();
+      forget();
       setSaved(fresh);
-      setOrder(fresh);
+      setItems(fresh);
     });
   }
 
@@ -318,7 +115,7 @@ export function GalleryEditor({ initial }: { initial: GalleryPhoto[] }) {
   function preview() {
     startWork(async () => {
       const result = await stageGallery(
-        order.current
+        items
           .filter((t) => t.isVisible)
           .map((t) => ({
             id: t.key,
@@ -339,8 +136,8 @@ export function GalleryEditor({ initial }: { initial: GalleryPhoto[] }) {
 
   function discard() {
     setError(null);
-    spots.current.clear();
-    setOrder(saved);
+    forget();
+    setItems(saved);
     startWork(async () => clearStaged("gallery"));
   }
 
@@ -366,25 +163,22 @@ export function GalleryEditor({ initial }: { initial: GalleryPhoto[] }) {
         </p>
       ) : (
         <ul
-          ref={grid}
+          ref={gridRef}
           // Far smaller than the public grid, and that is the point: to drag
           // a photograph somewhere you have to see both ends of the move. At
           // the site's own size one tile filled a phone screen.
           className={cn(
             "mt-8 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5",
-            drag && "select-none",
+            dragging && "select-none",
           )}
         >
           {items.map((item, index) => (
             <li
               key={item.key}
-              ref={(node) => {
-                if (node) tiles.current.set(item.key, node);
-                else tiles.current.delete(item.key);
-              }}
+              ref={tileRef(item.key)}
               className={cn(
                 "flex flex-col border transition-colors",
-                drag?.key === item.key
+                dragging === item.key
                   ? "border-bronze relative z-10 cursor-grabbing"
                   : "border-bronze/15",
                 !item.isVisible && "border-dashed",
@@ -407,14 +201,7 @@ export function GalleryEditor({ initial }: { initial: GalleryPhoto[] }) {
                 <button
                   type="button"
                   aria-label={`Перемістити «${item.title || item.path}»`}
-                  // preventDefault on mousedown, not on pointerdown: the
-                  // latter does not stop the compatibility mouse event, so
-                  // the browser still began selecting text as the pointer
-                  // swept across the grid — and the selection took the drag
-                  // with it.
-                  onMouseDown={(e) => e.preventDefault()}
-                  onPointerDown={(e) => onPointerDown(e, item.key)}
-                  onKeyDown={(e) => onTileKeyDown(e, index)}
+                  {...handleProps(item.key, index)}
                   // Without touch-none a touch drag scrolls the page instead.
                   className="absolute inset-0 cursor-grab touch-none active:cursor-grabbing"
                 />
@@ -454,7 +241,7 @@ export function GalleryEditor({ initial }: { initial: GalleryPhoto[] }) {
 
                 <IconButton
                   label="Прибрати з галереї"
-                  onClick={() => setOrder(order.current.filter((t) => t.key !== item.key))}
+                  onClick={() => setItems(items.filter((t) => t.key !== item.key))}
                 >
                   <Trash2 className="size-4" aria-hidden />
                 </IconButton>
@@ -480,7 +267,7 @@ export function GalleryEditor({ initial }: { initial: GalleryPhoto[] }) {
         current={used}
         multiple
         onPick={(picked) =>
-          setOrder([
+          setItems([
             ...picked.map((p) => ({
               // No database id yet; the key only has to be unique on screen.
               key: `new-${p.id}`,
@@ -493,7 +280,7 @@ export function GalleryEditor({ initial }: { initial: GalleryPhoto[] }) {
               caption: "",
               isVisible: true,
             })),
-            ...order.current,
+            ...items,
           ])
         }
       />

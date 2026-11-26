@@ -2,10 +2,10 @@
 
 import Image from "next/image";
 import { useState } from "react";
-import { ChevronLeft, ChevronRight, ImagePlus, Star, X } from "lucide-react";
+import { ImagePlus, Star, X } from "lucide-react";
 
 import { MediaPickerDialog } from "@/features/admin-media";
-import { cn } from "@/shared/lib";
+import { cn, useGridReorder } from "@/shared/lib";
 import { Button } from "@/shared/ui";
 
 import type { RoomPhoto } from "../model/actions";
@@ -13,10 +13,10 @@ import type { RoomPhoto } from "../model/actions";
 /**
  * A card's photographs: which, in what order, and which is the cover.
  *
- * Arrows rather than dragging. There are three or four photographs per card,
- * the strip is one row, and a left/right button says exactly what it does —
- * dragging would be a nicer gesture for a wall of thirty, which is what the
- * gallery is.
+ * Dragged into order, the same way as the gallery: the picture is the
+ * handle, and the tile under the pointer is the new place. Arrows were
+ * here first and were tedious — moving a photograph three places meant
+ * three aimed clicks.
  */
 export function RoomPhotos({
   photos,
@@ -30,15 +30,11 @@ export function RoomPhotos({
   onCover: (mediaId: string | null) => void;
 }) {
   const [adding, setAdding] = useState(false);
-
-  const move = (from: number, to: number) => {
-    if (to < 0 || to >= photos.length) return;
-    const next = [...photos];
-    const [item] = next.splice(from, 1);
-    if (!item) return;
-    next.splice(to, 0, item);
-    onChange(next);
-  };
+  const { gridRef, tileRef, handleProps, dragging } = useGridReorder(
+    photos,
+    (photo) => photo.mediaId,
+    onChange,
+  );
 
   function remove(mediaId: string) {
     onChange(photos.filter((p) => p.mediaId !== mediaId));
@@ -56,13 +52,24 @@ export function RoomPhotos({
           Поки жодної. Картка показуватиме лише обкладинку.
         </p>
       ) : (
-        <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+        <ul
+          ref={gridRef}
+          className={cn(
+            "grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4",
+            dragging && "select-none",
+          )}
+        >
           {photos.map((photo, i) => (
             <li
               key={photo.mediaId}
+              ref={tileRef(photo.mediaId)}
               className={cn(
                 "flex flex-col border",
-                photo.mediaId === coverMediaId ? "border-bronze" : "border-bronze/15",
+                dragging === photo.mediaId
+                  ? "border-bronze relative z-10 cursor-grabbing"
+                  : photo.mediaId === coverMediaId
+                    ? "border-bronze"
+                    : "border-bronze/15",
               )}
             >
               <span className="bg-surface-low relative block aspect-[4/3] w-full">
@@ -73,30 +80,29 @@ export function RoomPhotos({
                   sizes="(min-width: 1024px) 160px, 40vw"
                   className="object-cover"
                 />
+
+                {/* The picture is the handle. */}
+                <button
+                  type="button"
+                  aria-label={`Перемістити «${photo.path}»`}
+                  {...handleProps(photo.mediaId, i)}
+                  className="absolute inset-0 cursor-grab touch-none active:cursor-grabbing"
+                />
+
                 {photo.mediaId === coverMediaId ? (
-                  <span className="label-caps bg-surface-lowest/80 text-bronze absolute top-0 left-0 px-1.5 py-0.5 text-[10px]">
+                  <span className="label-caps bg-surface-lowest/80 text-bronze pointer-events-none absolute top-0 left-0 px-1.5 py-0.5 text-[10px]">
                     Обкладинка
                   </span>
                 ) : null}
               </span>
 
               <span className="flex items-center justify-between gap-1 p-1">
-                <Tool label="Лівіше" disabled={i === 0} onClick={() => move(i, i - 1)}>
-                  <ChevronLeft className="size-4" aria-hidden />
-                </Tool>
                 <Tool
                   label="Зробити обкладинкою"
                   disabled={photo.mediaId === coverMediaId}
                   onClick={() => onCover(photo.mediaId)}
                 >
                   <Star className="size-4" aria-hidden />
-                </Tool>
-                <Tool
-                  label="Правіше"
-                  disabled={i === photos.length - 1}
-                  onClick={() => move(i, i + 1)}
-                >
-                  <ChevronRight className="size-4" aria-hidden />
                 </Tool>
                 <Tool label="Прибрати" onClick={() => remove(photo.mediaId)}>
                   <X className="size-4" aria-hidden />
@@ -108,8 +114,9 @@ export function RoomPhotos({
       )}
 
       <p className="text-muted-foreground/70 text-[12px] leading-4">
-        Перша фотографія показується на картці; якщо їх більше однієї — картка стає
-        слайдером. Обкладинка — те, що видно, коли фотографій ще немає.
+        Перетягніть фото, щоб змінити порядок. Перша показується на картці; якщо їх
+        більше однієї — картка стає слайдером. Обкладинка — те, що видно, коли
+        фотографій ще немає.
       </p>
 
       <Button

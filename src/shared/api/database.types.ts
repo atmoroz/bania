@@ -658,8 +658,6 @@ export type Database = {
           email: string | null
           extra_phone_display: string | null
           id: boolean
-          instagram_handle: string | null
-          instagram_url: string | null
           map_url: string | null
           min_duration_minutes: number
           opening_hours_note: string
@@ -677,8 +675,6 @@ export type Database = {
           email?: string | null
           extra_phone_display?: string | null
           id?: boolean
-          instagram_handle?: string | null
-          instagram_url?: string | null
           map_url?: string | null
           min_duration_minutes?: number
           opening_hours_note?: string
@@ -696,8 +692,6 @@ export type Database = {
           email?: string | null
           extra_phone_display?: string | null
           id?: boolean
-          instagram_handle?: string | null
-          instagram_url?: string | null
           map_url?: string | null
           min_duration_minutes?: number
           opening_hours_note?: string
@@ -707,6 +701,39 @@ export type Database = {
           slot_step_minutes?: number
           updated_at?: string
           wordmark?: string
+        }
+        Relationships: []
+      }
+      social_links: {
+        Row: {
+          created_at: string
+          id: string
+          is_visible: boolean
+          kind: Database["public"]["Enums"]["social_kind"]
+          label: string | null
+          sort_order: number
+          updated_at: string
+          url: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_visible?: boolean
+          kind: Database["public"]["Enums"]["social_kind"]
+          label?: string | null
+          sort_order?: number
+          updated_at?: string
+          url: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_visible?: boolean
+          kind?: Database["public"]["Enums"]["social_kind"]
+          label?: string | null
+          sort_order?: number
+          updated_at?: string
+          url?: string
         }
         Relationships: []
       }
@@ -814,6 +841,15 @@ export type Database = {
         | "rich_text"
         | "review_form"
       booking_status: "PENDING" | "CONFIRMED" | "CANCELLED"
+      social_kind:
+        | "instagram"
+        | "telegram"
+        | "tiktok"
+        | "facebook"
+        | "viber"
+        | "whatsapp"
+        | "youtube"
+        | "other"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -958,6 +994,16 @@ export const Constants = {
         "review_form",
       ],
       booking_status: ["PENDING", "CONFIRMED", "CANCELLED"],
+      social_kind: [
+        "instagram",
+        "telegram",
+        "tiktok",
+        "facebook",
+        "viber",
+        "whatsapp",
+        "youtube",
+        "other",
+      ],
     },
   },
 } as const

@@ -2,6 +2,7 @@
 
 import { updateTag } from "next/cache";
 
+import type { SocialKind } from "@/entities/settings/ui/social-icon";
 import { CONTENT_TAG, createSupabaseServerClient, getAdmin } from "@/shared/api";
 
 export type VenueSettings = {
@@ -13,8 +14,6 @@ export type VenueSettings = {
   email: string;
   address: string;
   mapUrl: string;
-  instagramHandle: string;
-  instagramUrl: string;
   openingHoursNote: string;
   minDurationMinutes: number;
   bufferMinutes: number;
@@ -30,6 +29,15 @@ export type DayHours = {
   closesAt: string;
 };
 
+/** One place the venue can be found. `id` is null until it is saved. */
+export type SocialRow = {
+  id: string | null;
+  kind: SocialKind;
+  url: string;
+  label: string;
+  isVisible: boolean;
+};
+
 export type Closure = {
   id: string | null;
   startsOn: string;
@@ -41,6 +49,7 @@ export type VenueConfig = {
   settings: VenueSettings;
   hours: DayHours[];
   closures: Closure[];
+  social: SocialRow[];
 };
 
 export type SettingsResult = { ok: true } | { ok: false; message: string };
@@ -57,19 +66,24 @@ export async function getVenueConfig(): Promise<VenueConfig> {
   await requireAdmin();
 
   const supabase = await createSupabaseServerClient();
-  const [{ data: s, error }, { data: hours }, { data: closures }] = await Promise.all([
-    supabase.from("settings").select("*").maybeSingle(),
-    supabase
-      .from("opening_hours")
-      .select("weekday, opens_at, closes_at, is_closed")
-      .is("room_id", null)
-      .order("weekday"),
-    supabase
-      .from("closures")
-      .select("id, starts_on, ends_on, reason")
-      .is("room_id", null)
-      .order("starts_on"),
-  ]);
+  const [{ data: s, error }, { data: hours }, { data: closures }, { data: social }] =
+    await Promise.all([
+      supabase.from("settings").select("*").maybeSingle(),
+      supabase
+        .from("opening_hours")
+        .select("weekday, opens_at, closes_at, is_closed")
+        .is("room_id", null)
+        .order("weekday"),
+      supabase
+        .from("closures")
+        .select("id, starts_on, ends_on, reason")
+        .is("room_id", null)
+        .order("starts_on"),
+      // The admin client is the administrator, so the policy lets hidden
+      // rows through — which is the point: they are hidden on the site, not
+      // from the person who hid them.
+      supabase.from("social_links").select("id, kind, url, label, is_visible").order("sort_order"),
+    ]);
 
   if (error) throw new Error(`Failed to load the settings: ${error.message}`);
   if (!s) throw new Error("The settings row is missing");
@@ -86,8 +100,6 @@ export async function getVenueConfig(): Promise<VenueConfig> {
       email: s.email ?? "",
       address: s.address ?? "",
       mapUrl: s.map_url ?? "",
-      instagramHandle: s.instagram_handle ?? "",
-      instagramUrl: s.instagram_url ?? "",
       openingHoursNote: s.opening_hours_note,
       minDurationMinutes: s.min_duration_minutes,
       bufferMinutes: s.buffer_minutes,
@@ -109,6 +121,13 @@ export async function getVenueConfig(): Promise<VenueConfig> {
       startsOn: c.starts_on,
       endsOn: c.ends_on,
       reason: c.reason ?? "",
+    })),
+    social: (social ?? []).map((l) => ({
+      id: l.id,
+      kind: l.kind,
+      url: l.url,
+      label: l.label ?? "",
+      isVisible: l.is_visible,
     })),
   };
 }
@@ -135,8 +154,6 @@ export async function saveVenueConfig(config: VenueConfig): Promise<SettingsResu
         email: config.settings.email,
         address: config.settings.address,
         map_url: config.settings.mapUrl,
-        instagram_handle: config.settings.instagramHandle,
-        instagram_url: config.settings.instagramUrl,
         opening_hours_note: config.settings.openingHoursNote,
         min_duration_minutes: config.settings.minDurationMinutes,
         buffer_minutes: config.settings.bufferMinutes,
@@ -154,6 +171,17 @@ export async function saveVenueConfig(config: VenueConfig): Promise<SettingsResu
         ends_on: c.endsOn,
         reason: c.reason,
       })),
+      social: config.social
+        // A row with no address is a row the owner started and left; it is
+        // dropped rather than refused, which would block the whole save.
+        .filter((l) => l.url.trim() !== "")
+        .map((l) => ({
+          id: l.id,
+          kind: l.kind,
+          url: l.url,
+          label: l.label,
+          is_visible: l.isVisible,
+        })),
     },
   });
 

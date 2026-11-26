@@ -3,6 +3,7 @@ export { linkifyHandles } from "./linkify-handles";
 export { hasRunOfFreeSlots, venueDateOf } from "./slots";
 export { scrollChildToTop } from "./scroll-into-list";
 export { useMatchedHeight } from "./use-matched-height";
+export { useGridReorder } from "./use-grid-reorder";
 export { useScrollEdges } from "./use-scroll-edges";
 export {
   buildSlots,

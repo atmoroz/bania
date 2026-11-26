@@ -5,13 +5,12 @@ begin;
 -- settings -------------------------------------------------------------
 insert into public.settings (
   id, site_title, wordmark, phone_display, phone_e164, email, address,
-  map_url, instagram_handle, instagram_url, opening_hours_note,
+  map_url, opening_hours_note,
   min_duration_minutes, buffer_minutes, slot_step_minutes
 ) values (
   true, $q$Стара Дорога$q$, $q$BATHHOUSE$q$, $q$066 123 12 31$q$, $q$+380661231231$q$,
   $q$welcome@staradoroga.ua$q$, $q$вул. Стара Дорога, 42, Лісове урочище, Київська обл.$q$,
   $q$https://maps.google.com/?q=Банний+комплекс+Стара+Дорога$q$,
-  $q$@staradoroga$q$, $q$https://instagram.com/staradoroga$q$,
   $q$Щоденно 09:00 — 23:00$q$,
   60, 0, 120
 )
@@ -19,8 +18,12 @@ on conflict (id) do update set
   site_title = excluded.site_title, wordmark = excluded.wordmark,
   phone_display = excluded.phone_display, phone_e164 = excluded.phone_e164,
   email = excluded.email, address = excluded.address, map_url = excluded.map_url,
-  instagram_handle = excluded.instagram_handle, instagram_url = excluded.instagram_url,
   opening_hours_note = excluded.opening_hours_note;
+
+-- where the venue is found: rows now, not columns on settings
+insert into public.social_links (kind, url, label, sort_order)
+values ($q$instagram$q$, $q$https://instagram.com/staradoroga$q$, $q$@staradoroga$q$, 1)
+on conflict do nothing;
 
 -- media ----------------------------------------------------------------
 insert into public.media (storage_path, alt) values

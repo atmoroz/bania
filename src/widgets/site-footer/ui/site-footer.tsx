@@ -1,8 +1,8 @@
 import Link from "next/link";
-import { Camera, Check, Clock, Mail, MapPin, Phone } from "lucide-react";
+import { Check, Clock, Mail, MapPin, Phone } from "lucide-react";
 
 import { getNavigation } from "@/entities/page-block";
-import { getSettings } from "@/entities/settings";
+import { getSettings, getSocialLinks, SocialIcon, socialLabel } from "@/entities/settings";
 import { Container, LogoMark } from "@/shared/ui";
 
 const etiquette = [
@@ -13,7 +13,11 @@ const etiquette = [
 
 /** `bare` drops the section links, for the preview: see SiteHeaderClient. */
 export async function SiteFooter({ bare = false }: { bare?: boolean } = {}) {
-  const [settings, navigation] = await Promise.all([getSettings(), getNavigation()]);
+  const [settings, navigation, social] = await Promise.all([
+    getSettings(),
+    getNavigation(),
+    getSocialLinks(),
+  ]);
 
   return (
     <footer className="border-bronze/15 bg-surface-lowest mt-auto border-t">
@@ -29,14 +33,25 @@ export async function SiteFooter({ bare = false }: { bare?: boolean } = {}) {
             Автентична культура парної та гарячих чавунних чанів на дровах з хвоєю
             в оточенні вікового лісу. Простір глибокого відновлення тіла і розуму.
           </p>
-          {settings.instagram_url ? (
-            <a
-              href={settings.instagram_url}
-              className="text-foreground hover:text-bronze mt-6 inline-flex items-center gap-2 text-[15px] transition-colors"
-            >
-              <Camera className="size-4" aria-hidden />
-              Instagram {settings.instagram_handle}
-            </a>
+          {/* Every network the venue is on, in the order the owner put
+              them, each with its own mark. One list from the database
+              rather than a column and an icon chosen in the markup. */}
+          {social.length > 0 ? (
+            <ul className="mt-6 flex flex-col gap-3">
+              {social.map((link) => (
+                <li key={link.id}>
+                  <a
+                    href={link.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-foreground hover:text-bronze inline-flex items-center gap-2 text-[15px] transition-colors"
+                  >
+                    <SocialIcon kind={link.kind} className="size-4" />
+                    {link.label ?? socialLabel[link.kind]}
+                  </a>
+                </li>
+              ))}
+            </ul>
           ) : null}
         </div>
 
