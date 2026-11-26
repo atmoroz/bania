@@ -97,12 +97,23 @@ export function RoomPhotos({
               </span>
 
               <span className="flex items-center justify-between gap-1 p-1">
+                {/* The cover's star is the lit one. It used to be the
+                    dimmed one, because it was the disabled button — which
+                    said the opposite of what it meant. */}
                 <Tool
-                  label="Зробити обкладинкою"
+                  label={
+                    photo.mediaId === coverMediaId
+                      ? "Це обкладинка"
+                      : "Зробити обкладинкою"
+                  }
                   disabled={photo.mediaId === coverMediaId}
+                  lit={photo.mediaId === coverMediaId}
                   onClick={() => onCover(photo.mediaId)}
                 >
-                  <Star className="size-4" aria-hidden />
+                  <Star
+                    className={cn("size-4", photo.mediaId === coverMediaId && "fill-current")}
+                    aria-hidden
+                  />
                 </Tool>
                 <Tool label="Прибрати" onClick={() => remove(photo.mediaId)}>
                   <X className="size-4" aria-hidden />
@@ -152,11 +163,14 @@ export function RoomPhotos({
 function Tool({
   label,
   disabled,
+  lit,
   onClick,
   children,
 }: {
   label: string;
   disabled?: boolean;
+  /** On rather than unavailable: the state the button reports is true. */
+  lit?: boolean;
   onClick: () => void;
   children: React.ReactNode;
 }) {
@@ -165,9 +179,15 @@ function Tool({
       type="button"
       aria-label={label}
       title={label}
+      aria-pressed={lit}
       disabled={disabled}
       onClick={onClick}
-      className="text-muted-foreground hover:text-bronze p-1 transition-colors disabled:opacity-25"
+      className={cn(
+        "p-1 transition-colors",
+        lit
+          ? "text-bronze disabled:opacity-100"
+          : "text-muted-foreground hover:text-bronze disabled:opacity-25",
+      )}
     >
       {children}
     </button>
