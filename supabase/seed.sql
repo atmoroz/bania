@@ -217,11 +217,11 @@ values ($q$pricing$q$, $q$Ціни та пакети$q$, $q$Ціни та пак
 on conflict (slug) do update set
   nav_label = excluded.nav_label, title = excluded.title, sort_order = excluded.sort_order;
 insert into public.pages (slug, nav_label, title, sort_order)
-values ($q$gallery$q$, $q$Фотогалерея$q$, $q$Фотогалерея$q$, 4)
+values ($q$gallery$q$, $q$Фотогалерея$q$, $q$Фотогалерея$q$, 5)
 on conflict (slug) do update set
   nav_label = excluded.nav_label, title = excluded.title, sort_order = excluded.sort_order;
 insert into public.pages (slug, nav_label, title, sort_order)
-values ($q$booking$q$, $q$Календар$q$, $q$Календар бронювання$q$, 5)
+values ($q$booking$q$, $q$Календар$q$, $q$Календар бронювання$q$, 4)
 on conflict (slug) do update set
   nav_label = excluded.nav_label, title = excluded.title, sort_order = excluded.sort_order;
 insert into public.pages (slug, nav_label, title, sort_order)
