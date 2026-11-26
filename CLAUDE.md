@@ -30,6 +30,9 @@ The project starts from zero. Establish a clean, scalable architecture without i
 3. `docs/DEVELOPMENT.md` — development workflow and conventions.
 4. `docs/ROADMAP.md` — implementation stages, completed work, and next tasks.
 5. `docs/handoff/latest.md` — latest development handoff and current state.
+6. `docs/decisions/README.md` — the index of decisions taken and, for each, what was
+   rejected and why. Read this before proposing a change to the data model: most of
+   what looks like an oversight has already been argued once.
 
 Then read the relevant feature documentation and actual source files before making changes.
 
@@ -339,7 +342,77 @@ Requirements:
 - Support installation on compatible mobile devices.
 - Implement sensible offline caching.
 - Avoid caching sensitive admin pages or customer data.
-- Do not serve
+- Do not serve stale availability. A cached calendar that shows a slot as free after
+  it has been taken is worse than no offline support at all.
+- Keep the service worker's scope and update strategy explicit, so a stale shell cannot
+  outlive a deployment.
 
-Обязательно прочти и предложи порядок действий.
-all ower files in folder /project-documentation
+---
+
+## Verification
+
+Nothing is done until it has been checked. Claims of completion without evidence are
+worse than an admission that something is untested.
+
+- Run `npm run typecheck && npm run lint && npm run build` before calling work finished.
+- **A green build is not proof that a page works.** It has already happened on this
+  project that all routes prerendered successfully while a page rendered nothing but
+  its error boundary. Open the page.
+- Database work is verified against a real PostgreSQL, not by reading the SQL. Two
+  genuine defects on this project were caught that way and would not have been caught
+  by review.
+- Verify behaviour, not only syntax: that an overlapping booking is rejected, that a
+  cancelled one frees its slot, that an anonymous client cannot read customer data.
+- When something cannot be verified, say so plainly and say why.
+
+---
+
+## Migrations
+
+- Migrations are applied through the Supabase SQL editor; the CLI is not linked.
+- Run every migration against a throwaway PostgreSQL container first. See
+  `docs/DEVELOPMENT.md` for the recipe.
+- Supabase warns that almost every script is "destructive" because the scripts contain
+  `drop policy if exists` and `drop trigger if exists`. Read the script before
+  dismissing the warning — sometimes it is right.
+- Never edit a migration that has already been applied. Add a new one.
+
+---
+
+## Documentation and decisions
+
+The repository is the source of truth for what exists; `docs/` is the source of truth
+for what is intended.
+
+- Update the affected document in the same change as the behaviour.
+- A non-obvious choice, especially one where the obvious alternative was rejected, gets
+  a file in `docs/decisions/`: context, decision, why, what was rejected, consequences.
+- A deferred thing goes in `docs/BACKLOG.md` with the condition for picking it up.
+- Finish a working session by updating `docs/handoff/latest.md`.
+- Never document something as done before it works.
+
+---
+
+## Git
+
+- `main` is the branch; the remote is `github.com/atmoroz/bania`.
+- Commit messages explain **why**, not what the diff already shows.
+- Never commit `.env.local`, tokens or keys. Check before staging.
+- `docs/` and `project-documentation/` are intentionally not tracked.
+
+---
+
+## When requirements and this file disagree
+
+The sections below have been superseded by decisions taken during the work. They are
+left in place as history; the decision records are authoritative.
+
+| Section | Superseded by |
+| --- | --- |
+| Public booking flow (visitors create bookings) | `docs/decisions/0001-phone-confirmed-booking.md` — the calendar shows free/busy and the administrator records bookings by phone |
+| Booking statuses including `PENDING` | `docs/decisions/0004-no-pending-status.md` — `CONFIRMED` and `CANCELLED` only |
+| Telegram integration | `docs/BACKLOG.md` — nothing to notify when the administrator enters the booking |
+| Core tables and the suggested source structure | `docs/DATABASE.md`, plus the records listed in `docs/decisions/README.md` |
+
+If a future instruction conflicts with a decision record, raise it rather than silently
+following either one.
