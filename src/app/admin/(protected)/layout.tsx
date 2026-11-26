@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Suspense, type ReactNode } from "react";
-import { CalendarDays, FileText, Images, Loader2, LogOut, Star } from "lucide-react";
+import { CalendarDays, FileText, Images, LayoutGrid, Loader2, LogOut, Star } from "lucide-react";
 
 import { signOut } from "@/features/admin-auth";
 import { getAdmin } from "@/shared/api";
@@ -11,6 +11,7 @@ const tabs = [
   { href: "/admin/bookings", label: "Бронювання", icon: CalendarDays },
   { href: "/admin/pages", label: "Сторінки", icon: FileText },
   { href: "/admin/media", label: "Медіа", icon: Images },
+  { href: "/admin/gallery", label: "Галерея", icon: LayoutGrid },
   { href: "/admin/reviews", label: "Відгуки", icon: Star },
 ];
 

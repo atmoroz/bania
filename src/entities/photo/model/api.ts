@@ -14,6 +14,10 @@ export async function getPhotos(): Promise<Photo[]> {
   const { data, error } = await supabase
     .from("gallery_photos")
     .select("id, title, caption, media(storage_path, alt)")
+    // A row with a room belongs to that card, not to the venue gallery --
+    // which is what the column has always meant and what this query used to
+    // ignore. Nothing sets a room yet, so nothing changes today.
+    .is("room_id", null)
     .eq("is_visible", true)
     .order("sort_order");
 
