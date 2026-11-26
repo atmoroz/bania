@@ -1,11 +1,11 @@
 "use client";
 
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { ChevronDown, ChevronUp, Eye, EyeOff } from "lucide-react";
 import { useState } from "react";
 
 import { MediaPicker } from "@/features/admin-media";
 import { cn } from "@/shared/lib";
-import { Button, SelectField, SwitchField, TextField } from "@/shared/ui";
+import { SelectField, SwitchField, TextField } from "@/shared/ui";
 
 import type { AdminBlock } from "../model/actions";
 import { blockFields, blockTypeLabel } from "../model/fields";
@@ -96,13 +96,23 @@ export function BlockEditor({
           >
             <ChevronDown className="size-4" aria-hidden />
           </button>
-          <Button
+          {/* Square, like the two arrows beside it. A full-size button
+              here stood a head taller than them and dragged the whole row
+              onto a second line on a phone. The badge in the title already
+              says when a block is hidden. */}
+          <button
             type="button"
-            variant="ghost"
+            aria-label={isVisible ? "Приховати блок" : "Показати блок"}
+            title={isVisible ? "Приховати блок" : "Показати блок"}
             onClick={() => onChange({ ...draft, isVisible: !isVisible })}
+            className="border-bronze/25 hover:border-bronze border p-2 transition-colors"
           >
-            {isVisible ? "Приховати" : "Показати"}
-          </Button>
+            {isVisible ? (
+              <Eye className="size-4" aria-hidden />
+            ) : (
+              <EyeOff className="size-4" aria-hidden />
+            )}
+          </button>
         </div>
       </div>
 

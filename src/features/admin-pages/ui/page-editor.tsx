@@ -228,32 +228,10 @@ export function PageEditor({ pages }: { pages: AdminPage[] }) {
           <div className="border-bronze/15 mt-8 border-t pt-6">
             {error ? <p className="text-destructive mb-4 text-[15px]">{error}</p> : null}
 
-            <div className="flex flex-wrap items-center gap-4">
-              <Button type="button" onClick={publish} disabled={!dirty || isBusy}>
-                {isBusy ? (
-                  <>
-                    <Loader2 className="size-4 animate-spin" aria-hidden /> Зберігаємо…
-                  </>
-                ) : (
-                  "Зберегти"
-                )}
-              </Button>
-
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={preview}
-                disabled={!dirty || isBusy}
-                title="Відкриє сторінку зі змінами в новій вкладці. Сайт не зміниться."
-              >
-                <Eye className="size-4" aria-hidden />
-                Переглянути
-              </Button>
-
-              <Button type="button" variant="ghost" onClick={discard} disabled={!dirty || isBusy}>
-                Скасувати
-              </Button>
-
+            {/* The same bar as the gallery and the catalogue: what the
+                state is on the left, what to do about it on the right, with
+                the one button that changes the site last. */}
+            <div className="flex flex-wrap items-center justify-between gap-4">
               <p className="text-muted-foreground text-[13px] leading-5">
                 {saved && !dirty
                   ? "Збережено. Зміни вже на сайті."
@@ -261,6 +239,33 @@ export function PageEditor({ pages }: { pages: AdminPage[] }) {
                     ? `Незбережених змін: ${changedIds.size}. На сайті вони ще не видні.`
                     : "Змін немає."}
               </p>
+
+              <div className="flex flex-wrap items-center gap-3">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={preview}
+                  disabled={!dirty || isBusy}
+                  title="Відкриє сторінку зі змінами в новій вкладці. Сайт не зміниться."
+                >
+                  <Eye className="size-4" aria-hidden />
+                  Переглянути
+                </Button>
+
+                <Button type="button" variant="ghost" onClick={discard} disabled={!dirty || isBusy}>
+                  Скасувати
+                </Button>
+
+                <Button type="button" onClick={publish} disabled={!dirty || isBusy}>
+                  {isBusy ? (
+                    <>
+                      <Loader2 className="size-4 animate-spin" aria-hidden /> Зберігаємо…
+                    </>
+                  ) : (
+                    "Зберегти"
+                  )}
+                </Button>
+              </div>
             </div>
           </div>
         </>
