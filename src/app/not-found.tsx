@@ -10,8 +10,8 @@ export default function NotFound() {
       />
       <div className="mt-10 flex flex-col gap-3 sm:flex-row">
         <ButtonLink href="/">На головну</ButtonLink>
-        <ButtonLink href="/locations" variant="ghost">
-          Локації та Чан
+        <ButtonLink href="/pricing" variant="ghost">
+          Локації та ціни
         </ButtonLink>
       </div>
     </Section>

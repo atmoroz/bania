@@ -40,7 +40,11 @@ export const blockSchemas = {
     stats: z.array(statItem).default([]),
   }),
   feature_grid: z.object({ ...heading, items: z.array(featureItem).default([]) }),
-  locations: z.object({ ...heading, showPrices: z.boolean().default(false) }),
+  locations: z.object({
+    ...heading,
+    showPrices: z.boolean().default(false),
+    showBooking: z.boolean().default(false),
+  }),
   addons: z.object(heading),
   gallery: z.object(heading),
   reviews: z.object({
@@ -51,6 +55,8 @@ export const blockSchemas = {
     summaryScore: z.string().optional(),
     summaryOutOf: z.string().optional(),
     summaryNote: z.string().optional(),
+    /** Label for the button that jumps to the form further down the page. */
+    writeLabel: z.string().optional(),
   }),
   contacts: z.object(heading),
   review_form: z.object({ ...heading, note: z.string().optional() }),

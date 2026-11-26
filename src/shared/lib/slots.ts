@@ -114,3 +114,34 @@ export function parseRange(range: string): { start: number; end: number } | null
   const end = toInstant(match[2]);
   return Number.isNaN(start) || Number.isNaN(end) ? null : { start, end };
 }
+
+/**
+ * Is there a stretch of `needed` free slots in a row?
+ *
+ * The question the calendar actually asks. A day with three scattered single
+ * hours and a two-hour minimum has free slots and no bookable session, and
+ * "has free slots" is the wrong test for whether to offer it.
+ */
+export function hasRunOfFreeSlots(slots: Slot[], needed: number): boolean {
+  let run = 0;
+  for (const slot of slots) {
+    run = slot.state === "free" ? run + 1 : 0;
+    if (run >= needed) return true;
+  }
+  return false;
+}
+
+/**
+ * The calendar date of an instant in the venue's own timezone.
+ *
+ * Not `toISOString().slice(0, 10)`, which is the UTC date: at 01:00 in Kyiv
+ * that is still yesterday, and "today" would be struck out as past.
+ */
+export function venueDateOf(instant: Date): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: VENUE_TIME_ZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(instant);
+}

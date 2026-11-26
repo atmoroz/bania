@@ -33,19 +33,25 @@ export function SectionHeading({
   eyebrow,
   title,
   lead,
+  action,
   className,
 }: {
   eyebrow?: ReactNode;
   title: ReactNode;
   lead?: ReactNode;
+  /** Sits beside the title on a wide screen, under it on a narrow one. */
+  action?: ReactNode;
   className?: string;
 }) {
   return (
-    <header className={cn("max-w-3xl", className)}>
+    <header className={cn(action ? "max-w-5xl" : "max-w-3xl", className)}>
       {eyebrow ? <Eyebrow>{eyebrow}</Eyebrow> : null}
-      <h2 className="font-display mt-4 text-[28px] leading-9 text-balance md:text-[40px] md:leading-[48px]">
-        {title}
-      </h2>
+      <div className="mt-4 flex flex-col gap-5 md:flex-row md:items-center md:justify-between md:gap-10">
+        <h2 className="font-display text-[28px] leading-9 text-balance md:text-[40px] md:leading-[48px]">
+          {title}
+        </h2>
+        {action ? <div className="shrink-0">{action}</div> : null}
+      </div>
       {lead ? (
         <p className="text-muted-foreground mt-5 text-[15px] leading-6 md:text-[18px] md:leading-7">
           {lead}

@@ -27,8 +27,9 @@ function renderBlock(block: Block) {
     case "locations":
       return <LocationsBlock content={block.content} />;
     // Retired type, kept so an old row still renders as the catalogue it became.
+    // Its schema predates showBooking, so the default is supplied here.
     case "packages":
-      return <LocationsBlock content={block.content} />;
+      return <LocationsBlock content={{ ...block.content, showBooking: false }} />;
     case "addons":
       return <AddonsBlock content={block.content} />;
     case "gallery":

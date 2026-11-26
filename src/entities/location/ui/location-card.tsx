@@ -1,18 +1,19 @@
 import Image from "next/image";
 import { Check } from "lucide-react";
 
-import { formatHryvnia } from "@/shared/lib";
-import { Card } from "@/shared/ui";
-import { cn } from "@/shared/lib";
+import { cn, formatHryvnia } from "@/shared/lib";
+import { ButtonLink, Card } from "@/shared/ui";
 
 import type { Location } from "../model/types";
 
 export function LocationCard({
   location,
   showPrice = true,
+  showBooking = false,
 }: {
   location: Location;
   showPrice?: boolean;
+  showBooking?: boolean;
 }) {
   return (
     <Card
@@ -74,6 +75,17 @@ export function LocationCard({
               мінімальне замовлення — {location.minimumHours} год
             </span>
           </p>
+        ) : null}
+
+        {/* Carries the room in the link so the calendar opens on the one that
+            was clicked, rather than making the visitor choose it twice. */}
+        {showBooking ? (
+          <ButtonLink
+            href={`/booking?room=${encodeURIComponent(location.slug)}`}
+            className={cn("w-full justify-center", showPrice ? "mt-5" : "mt-auto")}
+          >
+            Забронювати
+          </ButtonLink>
         ) : null}
       </div>
     </Card>

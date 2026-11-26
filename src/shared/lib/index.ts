@@ -1,4 +1,5 @@
 export { formatHryvnia } from "./money";
+export { hasRunOfFreeSlots, venueDateOf } from "./slots";
 export { scrollChildToTop } from "./scroll-into-list";
 export { useMatchedHeight } from "./use-matched-height";
 export { useScrollEdges } from "./use-scroll-edges";

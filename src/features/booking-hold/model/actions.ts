@@ -1,7 +1,14 @@
 "use server";
 
 import { createPublicClient } from "@/shared/api";
-import { buildSlots, parseRange, type BusyInterval, type Slot } from "@/shared/lib";
+import {
+  buildSlots,
+  hasRunOfFreeSlots,
+  parseRange,
+  venueDateOf,
+  type BusyInterval,
+  type Slot,
+} from "@/shared/lib";
 
 export type DayAvailability =
   | { open: true; slots: Slot[]; minimumMinutes: number; slotMinutes: number }
@@ -93,6 +100,89 @@ export async function getDayAvailability(
       now: Date.now(),
     }),
   };
+}
+
+/**
+ * Which days in a span still have room for a bookable session.
+ *
+ * "Full" means no run of consecutive free hours long enough to meet the
+ * minimum — not merely "something is taken". A day holding three scattered
+ * single hours against a two-hour minimum is full in every sense the visitor
+ * cares about, and showing it as available only wastes their click.
+ */
+export async function getRangeAvailability(
+  roomSlug: string,
+  fromIso: string,
+  toIso: string,
+): Promise<{ fullDates: string[]; closedDates: string[] }> {
+  const supabase = createPublicClient();
+  await supabase.rpc("expire_stale_holds");
+
+  const { data: room } = await supabase
+    .from("rooms")
+    .select("id")
+    .eq("slug", roomSlug)
+    .eq("is_visible", true)
+    .maybeSingle();
+
+  if (!room) return { fullDates: [], closedDates: [] };
+
+  const [{ data: days }, { data: units }, { data: settings }] = await Promise.all([
+    supabase.rpc("room_schedule_for_range", {
+      p_room_id: room.id,
+      p_from: fromIso,
+      p_to: toIso,
+    }),
+    supabase.rpc("room_units", { p_room_id: room.id }),
+    supabase.from("settings").select("slot_step_minutes").limit(1).single(),
+  ]);
+
+  const unitIds = (units ?? []) as unknown as string[];
+  const slotMinutes = settings?.slot_step_minutes ?? 60;
+
+  // One query for the whole span rather than one per day. The view is already
+  // filtered to visible rooms and carries no customer data.
+  const { data: busyRows } = await supabase
+    .from("busy_intervals")
+    .select("occupied, status")
+    .in("room_id", unitIds.length > 0 ? unitIds : [room.id]);
+
+  const busy: BusyInterval[] = (busyRows ?? []).flatMap((row) => {
+    const raw = typeof row.occupied === "string" ? row.occupied : null;
+    const parsed = raw ? parseRange(raw) : null;
+    return parsed ? [{ ...parsed, status: row.status ?? "CONFIRMED" }] : [];
+  });
+
+  const now = Date.now();
+  const fullDates: string[] = [];
+  const closedDates: string[] = [];
+
+  // Days already gone are reported as neither. They are unselectable anyway,
+  // and marking them "full" would strike out half the month and leave the
+  // mark meaning nothing where it matters.
+  const todayIso = venueDateOf(new Date(now));
+
+  for (const day of days ?? []) {
+    if (day.day < todayIso) continue;
+
+    if (!day.is_open || !day.opens_at || !day.closes_at) {
+      closedDates.push(day.day);
+      continue;
+    }
+
+    const slots = buildSlots({
+      opensAt: day.opens_at,
+      closesAt: day.closes_at,
+      slotMinutes,
+      busy,
+      now,
+    });
+
+    const needed = Math.ceil((day.min_duration_minutes ?? 120) / slotMinutes);
+    if (!hasRunOfFreeSlots(slots, needed)) fullDates.push(day.day);
+  }
+
+  return { fullDates, closedDates };
 }
 
 export type HoldResult =

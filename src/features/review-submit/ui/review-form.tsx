@@ -8,6 +8,8 @@ import { Button } from "@/shared/ui";
 
 import { submitReview } from "../model/actions";
 
+/** A face and a word per rating. The face reads before the word does. */
+const RATING_FACES = ["", "😞", "😐", "🙂", "😊", "🤩"] as const;
 const RATING_WORDS = ["", "Погано", "Так собі", "Непогано", "Добре", "Чудово"] as const;
 
 export function ReviewForm() {
@@ -38,7 +40,9 @@ export function ReviewForm() {
   if (sent) {
     return (
       <div className="border-bronze/25 bg-surface-low border p-8 text-center">
-        <Star className="fill-bronze text-bronze mx-auto size-7" aria-hidden />
+        <p className="text-[34px] leading-none" aria-hidden>
+          🙏
+        </p>
         <p className="font-display mt-4 text-[22px]">Дякуємо за відгук</p>
         <p className="text-muted-foreground mt-2 text-[15px] leading-6">
           Він з&apos;явиться на сайті після перевірки адміністратором.
@@ -85,7 +89,12 @@ export function ReviewForm() {
             ))}
           </div>
           {shown > 0 ? (
-            <span className="text-muted-foreground text-[14px]">{RATING_WORDS[shown]}</span>
+            <span className="flex items-center gap-2 text-[14px]">
+              <span aria-hidden className="text-[20px] leading-none">
+                {RATING_FACES[shown]}
+              </span>
+              <span className="text-muted-foreground">{RATING_WORDS[shown]}</span>
+            </span>
           ) : null}
         </div>
       </fieldset>

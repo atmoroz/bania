@@ -1,11 +1,13 @@
 "use client";
 
+import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { Check, Loader2, Phone } from "lucide-react";
 
 import {
   cn,
   formatHryvnia,
+  hasRunOfFreeSlots,
   formatVenueDate,
   scrollChildToTop,
   useMatchedHeight,
@@ -23,7 +25,12 @@ import {
   ScrollFade,
 } from "@/shared/ui";
 
-import { getDayAvailability, placeHold, type DayAvailability } from "../model/actions";
+import {
+  getDayAvailability,
+  getRangeAvailability,
+  placeHold,
+  type DayAvailability,
+} from "../model/actions";
 
 export type BookingRoom = {
   slug: string;
@@ -74,8 +81,19 @@ export function BookingCalendar({
   phoneDisplay: string;
   phoneHref: string;
 }) {
-  const [roomSlug, setRoomSlug] = useState(rooms[0]?.slug ?? "");
+  // A link from a price card names its room, so the visitor lands on the one
+  // they clicked rather than on whichever happens to be first.
+  const requestedRoom = useSearchParams().get("room");
+  const [roomSlug, setRoomSlug] = useState(
+    () =>
+      (requestedRoom && rooms.some((r) => r.slug === requestedRoom)
+        ? requestedRoom
+        : rooms[0]?.slug) ?? "",
+  );
   const [date, setDate] = useState<Date>(() => new Date());
+  const [month, setMonth] = useState<Date>(() => new Date());
+  const [fullDates, setFullDates] = useState<string[]>([]);
+  const [closedDates, setClosedDates] = useState<string[]>([]);
   const [availability, setAvailability] = useState<DayAvailability | null>(null);
   const [selected, setSelected] = useState<string[]>([]);
   const [isLoading, startLoading] = useTransition();
@@ -101,6 +119,26 @@ export function BookingCalendar({
       setAvailability(await getDayAvailability(roomSlug, isoDate));
     });
   }, [roomSlug, isoDate]);
+
+  // Which days in the visible month are already full, so the calendar can say
+  // so before the visitor clicks. Refetched when the room or the month changes.
+  useEffect(() => {
+    if (!roomSlug) return;
+    let cancelled = false;
+
+    const first = new Date(month.getFullYear(), month.getMonth(), 1);
+    const last = new Date(month.getFullYear(), month.getMonth() + 1, 0);
+
+    void getRangeAvailability(roomSlug, toIsoDate(first), toIsoDate(last)).then((result) => {
+      if (cancelled) return;
+      setFullDates(result.fullDates);
+      setClosedDates(result.closedDates);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [roomSlug, month]);
 
   function chooseRoom(slug: string) {
     setRoomSlug(slug);
@@ -217,6 +255,20 @@ export function BookingCalendar({
 
   const holdIsLive = secondsLeft > 0;
 
+  /**
+   * The chosen day is open but has nothing left worth offering.
+   *
+   * Checked against the day's own slots rather than the month summary: the
+   * month data can be a few seconds old, and this is the figure the visitor is
+   * about to act on. On today it also covers the ordinary case of the hours
+   * simply having run out.
+   */
+  const dayIsFull =
+    availability?.open === true &&
+    !hasRunOfFreeSlots(slots, Math.ceil(minimumMinutes / slotMinutes));
+
+  const isToday = isoDate === toIsoDate(new Date());
+
   return (
     <div className="grid items-stretch gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:gap-14">
       <div ref={leftColumnRef}>
@@ -253,12 +305,29 @@ export function BookingCalendar({
 
         <p className="label-caps text-bronze mt-10">2. Оберіть день</p>
         <Card className="mt-4 p-5">
+          {/* Full days stay clickable. Disabling them would hide why they are
+              unavailable, and the visitor is owed the reason. */}
           <Calendar
             mode="single"
             selected={date}
             onSelect={(d) => d && chooseDate(d)}
+            month={month}
+            onMonthChange={setMonth}
             disabled={{ before: startOfToday() }}
+            modifiers={{
+              full: (d) => fullDates.includes(toIsoDate(d)),
+              closed: (d) => closedDates.includes(toIsoDate(d)),
+            }}
+            modifiersClassNames={{
+              full: "text-muted-foreground/40 line-through",
+              closed: "text-muted-foreground/40 line-through",
+            }}
           />
+
+          <p className="text-muted-foreground mt-4 flex items-center gap-2 text-[12px]">
+            <span className="text-muted-foreground/40 line-through">00</span>
+            <span>— вільного часу немає</span>
+          </p>
         </Card>
       </div>
 
@@ -276,6 +345,17 @@ export function BookingCalendar({
           </p>
         ) : availability && !availability.open ? (
           <p className="text-muted-foreground mt-6 text-[15px]">{availability.reason}</p>
+        ) : dayIsFull ? (
+          <div className="border-bronze/20 bg-surface-low mt-6 border p-7">
+            <p className="text-[15px] leading-6">
+              {isToday
+                ? "На жаль, на сьогодні вільного часу вже немає."
+                : "На жаль, на цей день вільного часу немає."}
+            </p>
+            <p className="text-muted-foreground mt-2 text-[15px] leading-6">
+              Будь ласка, оберіть іншу дату — у календарі закреслені дні вже зайняті.
+            </p>
+          </div>
         ) : (
           <ScrollFade scrollRef={listRef} className="border-bronze/10 mt-5 border-y">
             <ul
@@ -327,12 +407,18 @@ export function BookingCalendar({
           <p className="text-destructive mt-5 text-[15px]">{holdError}</p>
         ) : null}
 
-        {/* Always shown, so the rule is visible before anything is clicked
-            rather than appearing only once a selection exists. */}
+        {/* Shown whenever there is something to choose, so the rule is visible
+            before anything is clicked rather than appearing only once a
+            selection exists. Hidden on a day with nothing left: a disabled
+            "minimum two hours" under "this day is full" answers a question
+            nobody is asking. */}
         <Button
           onClick={confirm}
           disabled={isHolding || holdIsLive || !everyRunLongEnough}
-          className="mt-8 w-full disabled:cursor-not-allowed disabled:opacity-50"
+          className={cn(
+            "mt-8 w-full disabled:cursor-not-allowed disabled:opacity-50",
+            (dayIsFull || availability?.open === false) && "hidden",
+          )}
         >
           {isHolding ? (
             <>

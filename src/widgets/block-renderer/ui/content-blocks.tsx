@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { Clock, Mail, MapPin, Navigation, Phone, Star } from "lucide-react";
 
 import { AddonRow, getAddons } from "@/entities/addon";
@@ -17,7 +18,12 @@ export async function LocationsBlock({ content }: { content: BlockContent["locat
       <SectionHeading eyebrow={content.eyebrow} title={content.title} lead={content.lead} />
       <div className="mt-14 grid gap-8 md:grid-cols-2 lg:grid-cols-3">
         {locations.map((location) => (
-          <LocationCard key={location.slug} location={location} showPrice={content.showPrices} />
+          <LocationCard
+            key={location.slug}
+            location={location}
+            showPrice={content.showPrices}
+            showBooking={content.showBooking}
+          />
         ))}
       </div>
     </Section>
@@ -63,7 +69,16 @@ export async function ReviewsBlock({ content }: { content: BlockContent["reviews
 
   return (
     <Section className="bg-surface-low">
-      <SectionHeading eyebrow={content.eyebrow} title={content.title} lead={content.lead} />
+      <SectionHeading
+        eyebrow={content.eyebrow}
+        title={content.title}
+        lead={content.lead}
+        // The page is long and the form sits at the bottom of it; without this
+        // the only way to find it is to scroll past every review.
+        action={
+          <ButtonLink href="#review-form">{content.writeLabel ?? "Залишити відгук"}</ButtonLink>
+        }
+      />
 
       {/* The score is counted, not typed in. It includes ratings left without
           a review, which are most of them, so the number matches what people
@@ -128,7 +143,7 @@ function ratingCountLabel(count: number): string {
 
 export function ReviewFormBlock({ content }: { content: BlockContent["review_form"] }) {
   return (
-    <Section>
+    <Section id="review-form" className="scroll-mt-24">
       <SectionHeading eyebrow={content.eyebrow} title={content.title} lead={content.lead} />
       <div className="mt-12 max-w-[640px]">
         <ReviewForm />
@@ -212,12 +227,17 @@ export async function BookingCtaBlock({ content }: { content: BlockContent["book
     <Section>
       <SectionHeading eyebrow={content.eyebrow} title={content.title} lead={content.lead} />
 
+      {/* The calendar reads ?room= to preselect, which is request-time data;
+          Cache Components needs it behind a boundary so the rest of the page
+          can still be prerendered. */}
       <div className="mt-14">
-        <BookingCalendar
-          rooms={bookable}
-          phoneDisplay={settings.phone_display}
-          phoneHref={`tel:${settings.phone_e164}`}
-        />
+        <Suspense fallback={<p className="text-muted-foreground text-[15px]">Завантаження…</p>}>
+          <BookingCalendar
+            rooms={bookable}
+            phoneDisplay={settings.phone_display}
+            phoneHref={`tel:${settings.phone_e164}`}
+          />
+        </Suspense>
       </div>
 
       {content.note ? (

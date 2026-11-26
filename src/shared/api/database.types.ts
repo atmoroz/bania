@@ -708,6 +708,17 @@ export type Database = {
           opens_at: string
         }[]
       }
+      room_schedule_for_range: {
+        Args: { p_from: string; p_room_id: string; p_to: string }
+        Returns: {
+          buffer_minutes: number
+          closes_at: string
+          day: string
+          is_open: boolean
+          min_duration_minutes: number
+          opens_at: string
+        }[]
+      }
       room_units: { Args: { p_room_id: string }; Returns: string[] }
       submit_review: {
         Args: { p_author?: string; p_body?: string; p_rating: number }
@@ -726,6 +737,7 @@ export type Database = {
         | "contacts"
         | "booking_cta"
         | "rich_text"
+        | "review_form"
       booking_status: "PENDING" | "CONFIRMED" | "CANCELLED"
     }
     CompositeTypes: {
@@ -868,6 +880,7 @@ export const Constants = {
         "contacts",
         "booking_cta",
         "rich_text",
+        "review_form",
       ],
       booking_status: ["PENDING", "CONFIRMED", "CANCELLED"],
     },
