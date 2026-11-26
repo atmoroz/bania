@@ -169,6 +169,26 @@
 }
 
 
+@layer base {
+  /* Browsers give a button the default arrow, and Tailwind does not change
+     that. Stated once here rather than as a class on every control, so a
+     component added later cannot forget it. */
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  a[href],
+  summary,
+  select,
+  label:has(input[type="checkbox"]),
+  label:has(input[type="radio"]) {
+    cursor: pointer;
+  }
+
+  button:disabled,
+  [aria-disabled="true"] {
+    cursor: not-allowed;
+  }
+}
+
 @utility font-display {
   font-family: var(--font-heading);
   font-weight: 400;
