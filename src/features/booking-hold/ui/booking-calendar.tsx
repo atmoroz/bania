@@ -1,9 +1,16 @@
 "use client";
 
-import { useEffect, useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { Check, Loader2, Phone } from "lucide-react";
 
-import { cn, formatHryvnia, formatVenueDate, type Slot } from "@/shared/lib";
+import {
+  cn,
+  formatHryvnia,
+  formatVenueDate,
+  scrollChildToTop,
+  useMatchedHeight,
+  type Slot,
+} from "@/shared/lib";
 import {
   Button,
   ButtonLink,
@@ -79,6 +86,13 @@ export function BookingCalendar({
 
   const isoDate = toIsoDate(date);
 
+  const listRef = useRef<HTMLUListElement>(null);
+  const firstOpenRef = useRef<HTMLLIElement>(null);
+  const leftColumnRef = useRef<HTMLDivElement>(null);
+  const rightColumnRef = useRef<HTMLDivElement>(null);
+
+  useMatchedHeight(leftColumnRef, rightColumnRef);
+
   // The effect only fetches. Clearing the selection belongs to the actions that
   // invalidate it — changing room or day — not to a side effect of rendering.
   useEffect(() => {
@@ -102,6 +116,19 @@ export function BookingCalendar({
       setAvailability(await getDayAvailability(roomSlug, isoDate));
     });
   }
+
+  /**
+   * Bring the first bookable hour into view inside the list.
+   *
+   * Scrolls the container rather than calling scrollIntoView, which would move
+   * the page as well and throw away where the visitor was looking. Early in the
+   * day this does nothing; late in the day it saves scrolling past a dozen
+   * hours that have already gone.
+   */
+  useEffect(
+    () => scrollChildToTop(() => listRef.current, () => firstOpenRef.current),
+    [availability],
+  );
 
   // The hold lives five minutes. The countdown is the honest part of the
   // promise: when it reaches zero the slot really is free again.
@@ -131,6 +158,12 @@ export function BookingCalendar({
    * one-hour bookings, and the database refuses both. Checking runs here
    * means the button says so before the visitor finds out the hard way.
    */
+  // The first hour that is still bookable; -1 when the day is over.
+  const firstOpenIndex = useMemo(
+    () => slots.findIndex((s) => s.state !== "past"),
+    [slots],
+  );
+
   const everyRunLongEnough = useMemo(() => {
     if (selectedSlots.length === 0) return false;
 
@@ -184,8 +217,8 @@ export function BookingCalendar({
   const holdIsLive = secondsLeft > 0;
 
   return (
-    <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:gap-14">
-      <div>
+    <div className="grid items-stretch gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:gap-14">
+      <div ref={leftColumnRef}>
         <p className="label-caps text-bronze">1. Оберіть локацію</p>
         {/* A grid, not a wrapping row: content-sized buttons produced a ragged
             staircase. Equal cells make the choice read as one set of options. */}
@@ -228,7 +261,9 @@ export function BookingCalendar({
         </Card>
       </div>
 
-      <div>
+      {/* A column, so the list can take the slack and both columns end level
+          instead of one trailing below the other. */}
+      <div ref={rightColumnRef} className="flex min-h-0 flex-col">
         <p className="label-caps text-bronze">
           3. Оберіть сеанси <span className="text-muted-foreground">(по годині, мінімум 2 поспіль)</span>
         </p>
@@ -241,11 +276,15 @@ export function BookingCalendar({
         ) : availability && !availability.open ? (
           <p className="text-muted-foreground mt-6 text-[15px]">{availability.reason}</p>
         ) : (
-          <ul className="mt-5 flex flex-col gap-3">
-            {slots.map((slot) => {
+          <ul
+            ref={listRef}
+            className="border-bronze/10 relative mt-5 flex max-h-[380px] min-h-0 flex-1 flex-col gap-3 overflow-y-auto border-y py-3 lg:max-h-none"
+          >
+            {slots.map((slot, index) => {
               const isSelected = selected.includes(slot.startsAt);
+              const isFirstOpen = index === firstOpenIndex;
               return (
-                <li key={slot.startsAt}>
+                <li key={slot.startsAt} ref={isFirstOpen ? firstOpenRef : null} className="shrink-0">
                   <button
                     type="button"
                     onClick={() => toggle(slot)}

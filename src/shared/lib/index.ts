@@ -1,4 +1,6 @@
 export { formatHryvnia } from "./money";
+export { scrollChildToTop } from "./scroll-into-list";
+export { useMatchedHeight } from "./use-matched-height";
 export {
   buildSlots,
   formatVenueDate,

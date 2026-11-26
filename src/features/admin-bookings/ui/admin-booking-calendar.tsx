@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { Check, Loader2, Plus, X } from "lucide-react";
 
-import { cn, formatVenueDate } from "@/shared/lib";
+import { cn, formatVenueDate, scrollChildToTop } from "@/shared/lib";
 import {
   Button,
   Calendar,
@@ -59,6 +59,9 @@ export function AdminBookingCalendar({ rooms }: { rooms: AdminRoom[] }) {
 
   const isoDate = toIsoDate(date);
 
+  const listRef = useRef<HTMLUListElement>(null);
+  const firstOpenRef = useRef<HTMLLIElement>(null);
+
   useEffect(() => {
     startLoading(async () => setDay(await getAdminDay(roomSlug, isoDate)));
   }, [roomSlug, isoDate]);
@@ -68,6 +71,20 @@ export function AdminBookingCalendar({ rooms }: { rooms: AdminRoom[] }) {
   }
 
   const slots = useMemo(() => (day?.open ? day.slots : []), [day]);
+
+  // The first hour still worth acting on: a pending hold if there is one,
+  // otherwise the first hour that has not passed.
+  const firstOpenIndex = useMemo(() => {
+    const pending = slots.findIndex((s) => s.state === "pending");
+    return pending >= 0 ? pending : slots.findIndex((s) => s.state !== "past");
+  }, [slots]);
+
+  // Scroll the list, not the page, so a day full of past hours opens on the
+  // part the owner can do something about.
+  useEffect(
+    () => scrollChildToTop(() => listRef.current, () => firstOpenRef.current),
+    [day],
+  );
 
   async function onCancel(slot: AdminSlot) {
     if (!slot.booking) return;
@@ -139,11 +156,15 @@ export function AdminBookingCalendar({ rooms }: { rooms: AdminRoom[] }) {
         {day && !day.open ? (
           <p className="text-muted-foreground mt-6 text-[15px]">{day.reason}</p>
         ) : (
-          <ul className="mt-6 flex flex-col gap-3">
-            {slots.map((slot) => (
+          <ul
+            ref={listRef}
+            className="border-bronze/10 relative mt-6 flex max-h-[420px] flex-col gap-3 overflow-y-auto border-y py-3 lg:max-h-[600px]"
+          >
+            {slots.map((slot, index) => (
               <li
                 key={slot.startsAt}
-                className={cn("flex flex-col gap-3 border p-4 md:flex-row md:items-center md:justify-between", stateStyle[slot.state])}
+                ref={index === firstOpenIndex ? firstOpenRef : null}
+                className={cn("flex shrink-0 flex-col gap-3 border p-4 md:flex-row md:items-center md:justify-between", stateStyle[slot.state])}
               >
                 <div>
                   <p className="text-[15px]">{slot.label}</p>

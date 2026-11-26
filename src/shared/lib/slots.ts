@@ -70,8 +70,11 @@ export function buildSlots({
     // exactly when the previous booking's buffer ends.
     const clash = busy.find((b) => start < b.end && b.start < end);
 
+    // Past the moment it STARTS, not the moment it ends. At 15:39 the
+    // 15:00-16:00 session is already under way; offering it would sell
+    // somebody forty minutes of a session they think is two hours.
     const state: Slot["state"] =
-      end <= now ? "past" : clash ? (clash.status === "PENDING" ? "held" : "busy") : "free";
+      start <= now ? "past" : clash ? (clash.status === "PENDING" ? "held" : "busy") : "free";
 
     slots.push({
       startsAt: new Date(start).toISOString(),
