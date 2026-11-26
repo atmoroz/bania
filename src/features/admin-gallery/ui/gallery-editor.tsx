@@ -27,8 +27,21 @@ type Tile = {
   isVisible: boolean;
 };
 
-/** Which tile is being dragged, where it started, and where it was grabbed. */
-type Drag = { key: string; from: number; grabX: number; grabY: number };
+/**
+ * A drag in progress.
+ *
+ * `pointerX/Y` and `slotX/Y` are where it began: the tile is kept under the
+ * pointer by arithmetic on those, rather than by measuring it every frame.
+ * Measuring would read whatever the slide animation is doing at that
+ * instant, which is exactly the feedback loop that made the grid shudder.
+ */
+type Drag = {
+  key: string;
+  pointerX: number;
+  pointerY: number;
+  slotX: number;
+  slotY: number;
+};
 
 const toTiles = (photos: GalleryPhoto[]): Tile[] =>
   photos.map((p) => ({ ...p, key: p.id, id: p.id }));
@@ -92,27 +105,56 @@ export function GalleryEditor({ initial }: { initial: GalleryPhoto[] }) {
   // the slide: tiles animate from where they were to where they now are
   // ---------------------------------------------------------------------
 
-  const boxes = useRef(new Map<string, DOMRect>());
+  const spots = useRef(new Map<string, { x: number; y: number }>());
+  const sliding = useRef(new Map<string, Animation>());
+  /** Where the pointer was last seen, so the held tile can be re-placed
+   *  the moment its slot moves rather than on the next pointer event. */
+  const pointer = useRef({ x: 0, y: 0 });
+
+  /** Keeps the dragged tile under the pointer, wherever its slot moved to. */
+  function follow(held: HTMLElement, at: Drag) {
+    // Pure arithmetic on layout positions: how far the pointer has
+    // travelled, less how far the tile's own slot has travelled under it.
+    const dx = pointer.current.x - at.pointerX - (held.offsetLeft - at.slotX);
+    const dy = pointer.current.y - at.pointerY - (held.offsetTop - at.slotY);
+    held.style.setProperty("transform", `translate(${dx}px, ${dy}px) scale(1.04)`);
+  }
 
   useLayoutEffect(() => {
     for (const [key, node] of tiles.current) {
-      const now = node.getBoundingClientRect();
-      const before = boxes.current.get(key);
-      boxes.current.set(key, now);
+      // offsetLeft/offsetTop, not getBoundingClientRect: these are layout
+      // positions and ignore transforms, so a tile that is still sliding
+      // reports where it belongs rather than where it happens to be. The
+      // first version measured mid-flight and fed the error back in, and
+      // the grid shook itself apart.
+      const now = { x: node.offsetLeft, y: node.offsetTop };
+      const before = spots.current.get(key);
+      spots.current.set(key, now);
 
       // The dragged tile is already following the pointer; animating it to
       // its slot as well would fight that.
       if (!before || key === drag?.key) continue;
 
-      const dx = before.left - now.left;
-      const dy = before.top - now.top;
+      const dx = before.x - now.x;
+      const dy = before.y - now.y;
       if (dx === 0 && dy === 0) continue;
 
-      node.animate(
-        [{ transform: `translate(${dx}px, ${dy}px)` }, { transform: "translate(0, 0)" }],
-        { duration: 220, easing: "cubic-bezier(0.2, 0.8, 0.2, 1)" },
+      // One slide at a time per tile. Overlapping animations on the same
+      // element is the other half of the shudder.
+      sliding.current.get(key)?.cancel();
+      sliding.current.set(
+        key,
+        node.animate(
+          [{ transform: `translate(${dx}px, ${dy}px)` }, { transform: "translate(0, 0)" }],
+          { duration: 180, easing: "cubic-bezier(0.2, 0.8, 0.2, 1)" },
+        ),
       );
     }
+
+    // The held tile's own slot has just moved under it. Re-placing it here,
+    // in the same frame, is the difference between gliding and twitching.
+    const held = drag ? tiles.current.get(drag.key) : undefined;
+    if (drag && held) follow(held, drag);
   }, [items, drag]);
 
   // ---------------------------------------------------------------------
@@ -130,17 +172,17 @@ export function GalleryEditor({ initial }: { initial: GalleryPhoto[] }) {
     return next;
   }
 
-  function onPointerDown(event: React.PointerEvent<HTMLButtonElement>, key: string, index: number) {
+  function onPointerDown(event: React.PointerEvent<HTMLButtonElement>, key: string) {
     const node = tiles.current.get(key);
-    const box = node?.getBoundingClientRect();
     // preventScroll because focusing a tile further down would otherwise
     // jump the page mid-drag.
     event.currentTarget.focus({ preventScroll: true });
     setDrag({
       key,
-      from: index,
-      grabX: box ? event.clientX - box.left : 0,
-      grabY: box ? event.clientY - box.top : 0,
+      pointerX: event.clientX,
+      pointerY: event.clientY,
+      slotX: node?.offsetLeft ?? 0,
+      slotY: node?.offsetTop ?? 0,
     });
   }
 
@@ -155,31 +197,31 @@ export function GalleryEditor({ initial }: { initial: GalleryPhoto[] }) {
 
     const held = tiles.current.get(drag.key);
 
-    /** Keeps the dragged tile under the pointer, wherever its slot moved to. */
-    const follow = (x: number, y: number) => {
-      if (!held) return;
-      // Measured without the transform, so the offset is from the slot the
-      // tile occupies now rather than from where it was a moment ago.
-      held.style.setProperty("transform", "none");
-      const slot = held.getBoundingClientRect();
-      held.style.setProperty(
-        "transform",
-        `translate(${x - slot.left - drag.grabX}px, ${y - slot.top - drag.grabY}px) scale(1.04)`,
-      );
-    };
-
     const onMove = (event: PointerEvent) => {
       const { clientX: x, clientY: y } = event;
+      pointer.current = { x, y };
+      const grid_ = grid.current;
+      if (!grid_) return;
 
-      // Hit-testing both axes is what makes the grid reorder in every
-      // direction: the tile under the pointer is the new position, whether
-      // it is beside, above or below.
+      // The pointer, in the same layout space the tiles report. Tiles and
+      // the grid share an offset parent, so one translation covers both --
+      // and nothing here reads a transform, so a tile in mid-slide is still
+      // hit-tested where it belongs. Testing against the animated rectangle
+      // made tiles swap back and forth under a still pointer.
+      const box = grid_.getBoundingClientRect();
+      const px = x - box.left + grid_.offsetLeft;
+      const py = y - box.top + grid_.offsetTop;
+
       const over = order.current.findIndex((item) => {
         if (item.key === drag.key) return false;
         const node = tiles.current.get(item.key);
         if (!node) return false;
-        const box = node.getBoundingClientRect();
-        return x >= box.left && x <= box.right && y >= box.top && y <= box.bottom;
+        return (
+          px >= node.offsetLeft &&
+          px <= node.offsetLeft + node.offsetWidth &&
+          py >= node.offsetTop &&
+          py <= node.offsetTop + node.offsetHeight
+        );
       });
 
       const current = order.current.findIndex((i) => i.key === drag.key);
@@ -188,7 +230,7 @@ export function GalleryEditor({ initial }: { initial: GalleryPhoto[] }) {
         if (next) setOrder(next);
       }
 
-      follow(x, y);
+      if (held) follow(held, drag);
     };
 
     const onUp = () => {
@@ -261,7 +303,7 @@ export function GalleryEditor({ initial }: { initial: GalleryPhoto[] }) {
       // Reloaded rather than assumed: the new rows have ids now, and the
       // next save has to update them instead of inserting them again.
       const fresh = toTiles(await getGalleryPhotos());
-      boxes.current.clear();
+      spots.current.clear();
       setSaved(fresh);
       setOrder(fresh);
     });
@@ -269,7 +311,7 @@ export function GalleryEditor({ initial }: { initial: GalleryPhoto[] }) {
 
   function discard() {
     setError(null);
-    boxes.current.clear();
+    spots.current.clear();
     setOrder(saved);
   }
 
@@ -342,7 +384,7 @@ export function GalleryEditor({ initial }: { initial: GalleryPhoto[] }) {
                   // swept across the grid — and the selection took the drag
                   // with it.
                   onMouseDown={(e) => e.preventDefault()}
-                  onPointerDown={(e) => onPointerDown(e, item.key, index)}
+                  onPointerDown={(e) => onPointerDown(e, item.key)}
                   onKeyDown={(e) => onTileKeyDown(e, index)}
                   // Without touch-none a touch drag scrolls the page instead.
                   className="absolute inset-0 cursor-grab touch-none active:cursor-grabbing"
