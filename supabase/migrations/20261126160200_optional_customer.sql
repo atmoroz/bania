@@ -1,0 +1,12 @@
+-- A confirmed booking no longer has to carry a name and a telephone number.
+--
+-- The constraint was added with the five-minute holds, on the reasoning that a
+-- confirmed booking nobody can be contacted about is a booking you cannot
+-- chase. That reasoning still holds, and it is now overruled deliberately:
+-- the owner takes these by telephone, and a caller who settles the time and
+-- rings off before giving a name has still taken the slot. Refusing to record
+-- it loses the slot as well as the name.
+--
+-- The trade is real and worth stating: an unattended booking cannot be
+-- confirmed with the guest, and a no-show cannot be followed up.
+alter table public.bookings drop constraint if exists bookings_confirmed_has_customer;

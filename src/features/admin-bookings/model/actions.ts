@@ -137,17 +137,15 @@ export async function confirmBooking(
 ): Promise<ActionResult> {
   await requireAdmin();
 
-  if (!customerName.trim() || !customerPhone.trim()) {
-    return { ok: false, message: "Вкажіть ім'я та телефон гостя." };
-  }
-
+  // Optional, as on creation: a slot held by someone who rang off before
+  // giving a name is still a slot that is taken.
   const supabase = await createSupabaseServerClient();
   const { error } = await supabase
     .from("bookings")
     .update({
       status: "CONFIRMED",
-      customer_name: customerName.trim(),
-      customer_phone: customerPhone.trim(),
+      customer_name: customerName.trim() || null,
+      customer_phone: customerPhone.trim() || null,
       hold_expires_at: null,
     })
     .eq("id", bookingId);
@@ -188,9 +186,10 @@ export async function createBooking(
   await requireAdmin();
 
   if (slotStarts.length === 0) return { ok: false, message: "Оберіть сеанс." };
-  if (!customerName.trim() || !customerPhone.trim()) {
-    return { ok: false, message: "Вкажіть ім'я та телефон гостя." };
-  }
+
+  // Name and phone are optional. The owner takes bookings mid-call and may
+  // have the time settled before the name; blocking the booking on a field
+  // they can fill in later would cost them the slot, not improve the record.
 
   const supabase = await createSupabaseServerClient();
   const { data: step } = await supabase
@@ -222,8 +221,8 @@ export async function createBooking(
     .from("bookings")
     .update({
       status: "CONFIRMED",
-      customer_name: customerName.trim(),
-      customer_phone: customerPhone.trim(),
+      customer_name: customerName.trim() || null,
+      customer_phone: customerPhone.trim() || null,
       note: note.trim() || null,
       hold_expires_at: null,
     })

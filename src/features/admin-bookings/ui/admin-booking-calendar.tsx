@@ -32,6 +32,11 @@ function toIsoDate(date: Date): string {
   return `${y}-${m}-${d}`;
 }
 
+function guestLine(booking: { customerName: string | null; customerPhone: string | null } | null | undefined) {
+  if (!booking) return "";
+  return [booking.customerName, booking.customerPhone].filter(Boolean).join(", ");
+}
+
 const stateLabel: Record<AdminSlot["state"], string> = {
   free: "Вільно",
   pending: "Очікує підтвердження",
@@ -102,6 +107,11 @@ export function AdminBookingCalendar({ rooms }: { rooms: AdminRoom[] }) {
     refresh();
   }
 
+  function openDialog(next: Pending) {
+    setError(null);
+    setDialog(next);
+  }
+
   async function onSubmit(formData: FormData) {
     if (!dialog) return;
     const name = String(formData.get("name") ?? "");
@@ -158,7 +168,10 @@ export function AdminBookingCalendar({ rooms }: { rooms: AdminRoom[] }) {
           ) : null}
         </div>
 
-        {error ? <p className="text-destructive mt-4 text-[15px]">{error}</p> : null}
+        {/* Only when no dialog is covering it; the dialog shows its own. */}
+        {error && !dialog ? (
+          <p className="text-destructive mt-4 text-[15px]">{error}</p>
+        ) : null}
 
         {day && !day.open ? (
           <p className="text-muted-foreground mt-6 text-[15px]">{day.reason}</p>
@@ -178,9 +191,10 @@ export function AdminBookingCalendar({ rooms }: { rooms: AdminRoom[] }) {
                     <p className="text-[15px]">{slot.label}</p>
                     <p className="text-muted-foreground mt-1 text-[13px]">
                       {stateLabel[slot.state]}
-                      {slot.booking?.customerName
-                        ? ` · ${slot.booking.customerName}, ${slot.booking.customerPhone}`
-                        : ""}
+                      {/* Either may be missing, so join what there is rather
+                          than hanging a comma off a blank or, worse, hiding a
+                          phone number because no name was taken. */}
+                      {guestLine(slot.booking) ? ` · ${guestLine(slot.booking)}` : ""}
                       {slot.booking?.note ? ` · ${slot.booking.note}` : ""}
                     </p>
                   </div>
@@ -188,7 +202,7 @@ export function AdminBookingCalendar({ rooms }: { rooms: AdminRoom[] }) {
                   <div className="flex shrink-0 gap-2">
                     {slot.state === "pending" ? (
                       <Button
-                        onClick={() => setDialog({ kind: "confirm", slot })}
+                        onClick={() => openDialog({ kind: "confirm", slot })}
                         className="px-4 py-2"
                       >
                         <Check className="size-4" aria-hidden /> Підтвердити
@@ -198,7 +212,7 @@ export function AdminBookingCalendar({ rooms }: { rooms: AdminRoom[] }) {
                     {slot.state === "free" ? (
                       <Button
                         variant="ghost"
-                        onClick={() => setDialog({ kind: "create", slot })}
+                        onClick={() => openDialog({ kind: "create", slot })}
                         className="px-4 py-2"
                       >
                         <Plus className="size-4" aria-hidden /> Забронювати
@@ -237,21 +251,27 @@ export function AdminBookingCalendar({ rooms }: { rooms: AdminRoom[] }) {
             {formatVenueDate(date.toISOString())} · {dialog?.slot.label}
           </p>
 
+          {error ? (
+            <p className="text-destructive mt-5 text-[14px] leading-snug">{error}</p>
+          ) : null}
+
           <form action={onSubmit} className="mt-7 flex flex-col gap-5">
             <label className="flex flex-col gap-2">
-              <span className="label-caps text-muted-foreground">Ім&apos;я гостя</span>
+              <span className="label-caps text-muted-foreground">
+                Ім&apos;я гостя <span className="normal-case">(необов&apos;язково)</span>
+              </span>
               <input
                 name="name"
-                required
                 defaultValue={dialog?.slot.booking?.customerName ?? ""}
                 className="border-foreground/25 focus:border-bronze border-b bg-transparent py-2 text-[15px] outline-none transition-colors"
               />
             </label>
             <label className="flex flex-col gap-2">
-              <span className="label-caps text-muted-foreground">Телефон</span>
+              <span className="label-caps text-muted-foreground">
+                Телефон <span className="normal-case">(необов&apos;язково)</span>
+              </span>
               <input
                 name="phone"
-                required
                 inputMode="tel"
                 defaultValue={dialog?.slot.booking?.customerPhone ?? ""}
                 className="border-foreground/25 focus:border-bronze border-b bg-transparent py-2 text-[15px] outline-none transition-colors"
