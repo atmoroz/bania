@@ -20,7 +20,12 @@ export type Location = {
   capacity: number | null;
   /** Minor units, to keep money away from floats. */
   pricePerHour: number | null;
-  minimumHours: number;
+  /**
+   * The minimum the database will actually enforce for this card, resolved
+   * from its own override or the venue default. Minutes, because that is the
+   * unit the rule is written in; the card divides for display.
+   */
+  minimumMinutes: number;
   highlights: string[];
   ctaLabel: string | null;
   isFeatured: boolean;

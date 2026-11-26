@@ -21,7 +21,7 @@ export async function getLocations(): Promise<Location[]> {
     .from("rooms")
     .select(
       `slug, name, eyebrow, short_description, description, capacity,
-       price_per_hour, minimum_hours, highlights, cta_label, is_featured, sort_order,
+       price_per_hour, highlights, cta_label, is_featured, sort_order,
        cover:media!rooms_cover_media_id_fkey(storage_path, alt),
        components:room_components!room_components_room_id_fkey(
          component:rooms!room_components_component_id_fkey(slug, name)
@@ -33,6 +33,14 @@ export async function getLocations(): Promise<Location[]> {
 
   if (error) throw new Error(`Failed to load locations: ${error.message}`);
 
+  // The minimum each card actually enforces, resolved by the database from the
+  // card's own override or the venue default. Asked for rather than stored on
+  // the row, so the figure on the card is the figure place_hold will apply —
+  // they used to be two numbers kept in step by hand, and they would not have
+  // stayed in step past the first change to the venue setting.
+  const { data: minimums } = await supabase.rpc("room_minimums");
+  const minimumBySlug = new Map((minimums ?? []).map((m) => [m.slug, m.minimum_minutes]));
+
   return (data ?? []).map((r) => ({
     slug: r.slug,
     name: r.name,
@@ -41,7 +49,7 @@ export async function getLocations(): Promise<Location[]> {
     description: r.description,
     capacity: r.capacity,
     pricePerHour: r.price_per_hour,
-    minimumHours: r.minimum_hours,
+    minimumMinutes: minimumBySlug.get(r.slug) ?? 60,
     highlights: r.highlights,
     ctaLabel: r.cta_label,
     isFeatured: r.is_featured,

@@ -544,7 +544,6 @@ export type Database = {
           is_featured: boolean
           is_visible: boolean
           min_duration_minutes: number | null
-          minimum_hours: number
           name: string
           price_per_hour: number | null
           short_description: string | null
@@ -566,7 +565,6 @@ export type Database = {
           is_featured?: boolean
           is_visible?: boolean
           min_duration_minutes?: number | null
-          minimum_hours?: number
           name: string
           price_per_hour?: number | null
           short_description?: string | null
@@ -588,7 +586,6 @@ export type Database = {
           is_featured?: boolean
           is_visible?: boolean
           min_duration_minutes?: number | null
-          minimum_hours?: number
           name?: string
           price_per_hour?: number | null
           short_description?: string | null
@@ -689,6 +686,10 @@ export type Database = {
     Functions: {
       expire_stale_holds: { Args: never; Returns: number }
       is_admin: { Args: never; Returns: boolean }
+      minimum_minutes: {
+        Args: { r: Database["public"]["Tables"]["rooms"]["Row"] }
+        Returns: number
+      }
       place_hold: {
         Args: {
           p_room_slug: string
@@ -698,6 +699,13 @@ export type Database = {
         Returns: string[]
       }
       room_minimum_minutes: { Args: { p_room_slug: string }; Returns: number }
+      room_minimums: {
+        Args: never
+        Returns: {
+          minimum_minutes: number
+          slug: string
+        }[]
+      }
       room_schedule_for_date: {
         Args: { p_date: string; p_room_id: string }
         Returns: {

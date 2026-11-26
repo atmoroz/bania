@@ -72,7 +72,7 @@ export function LocationCard({
               від {formatHryvnia(location.pricePerHour)} / год
             </span>
             <span className="text-muted-foreground block text-[13px]">
-              мінімальне замовлення — {location.minimumHours} год
+              мінімальне замовлення — {Math.round(location.minimumMinutes / 60)} год
             </span>
           </p>
         ) : null}

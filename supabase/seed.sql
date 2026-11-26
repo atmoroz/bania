@@ -37,51 +37,51 @@ on conflict (storage_path) do update set alt = excluded.alt;
 
 -- rooms: the catalogue of bookable cards -------------------------------
 insert into public.rooms (slug, eyebrow, name, short_description, description, capacity,
-  price_per_hour, minimum_hours, highlights, cta_label, is_featured, sort_order, cover_media_id)
+  price_per_hour, highlights, cta_label, is_featured, sort_order, cover_media_id)
 select $q$banya-1$q$, $q$Локація #1$q$, $q$Баня #1 з відкритим басейном$q$, $q$Простора альтанка, відкритий басейн та парна на дровах.$q$, $q$Простора дерев'яна альтанка з легкими шторами, чистий відкритий басейн з джерельною водою та духмяна парна на дровах. Ідеально для великої родини або дружньої компанії.$q$, 8,
-  65000, 2, array[$q$Відкритий басейн для контрастного занурення$q$, $q$Велика тераса-альтанка з м'якими зонами$q$, $q$Чайний стіл, чайник, весь посуд та мангал$q$]::text[], $q$Забронювати лазню$q$, false, 1, m.id
+  65000, array[$q$Відкритий басейн для контрастного занурення$q$, $q$Велика тераса-альтанка з м'якими зонами$q$, $q$Чайний стіл, чайник, весь посуд та мангал$q$]::text[], $q$Забронювати лазню$q$, false, 1, m.id
 from public.media m where m.storage_path = $q$banya-1-pool.png$q$
 on conflict (slug) do update set
   eyebrow = excluded.eyebrow, name = excluded.name,
   short_description = excluded.short_description, description = excluded.description,
   capacity = excluded.capacity, price_per_hour = excluded.price_per_hour,
-  minimum_hours = excluded.minimum_hours, highlights = excluded.highlights,
+  highlights = excluded.highlights,
   cta_label = excluded.cta_label, is_featured = excluded.is_featured,
   sort_order = excluded.sort_order, cover_media_id = excluded.cover_media_id;
 insert into public.rooms (slug, eyebrow, name, short_description, description, capacity,
-  price_per_hour, minimum_hours, highlights, cta_label, is_featured, sort_order, cover_media_id)
+  price_per_hour, highlights, cta_label, is_featured, sort_order, cover_media_id)
 select $q$banya-1-chan$q$, $q$Локація #2 • Повний релакс$q$, $q$Баня #1 + Чан на дровах$q$, $q$Одночасне користування гарячим чаном та парною.$q$, $q$Баня #1 разом з чавунним чаном на вогні: прогрів у парній, купання в басейні та занурення в гарячу купіль з хвоєю. Чан поєднується лише з Банею #1 — до Бані #2 він технічно не прилягає.$q$, 8,
-  130000, 2, array[$q$До 8 осіб у вартість пакету$q$, $q$Гарячий чан з хвоєю та річковим камінням$q$, $q$Прогрів у парній + купання в басейні$q$, $q$Трав'яний збір, липовий мед та банний текстиль$q$]::text[], $q$Обрати комбо-пакет$q$, true, 2, m.id
+  130000, array[$q$До 8 осіб у вартість пакету$q$, $q$Гарячий чан з хвоєю та річковим камінням$q$, $q$Прогрів у парній + купання в басейні$q$, $q$Трав'яний збір, липовий мед та банний текстиль$q$]::text[], $q$Обрати комбо-пакет$q$, true, 2, m.id
 from public.media m where m.storage_path = $q$chan.png$q$
 on conflict (slug) do update set
   eyebrow = excluded.eyebrow, name = excluded.name,
   short_description = excluded.short_description, description = excluded.description,
   capacity = excluded.capacity, price_per_hour = excluded.price_per_hour,
-  minimum_hours = excluded.minimum_hours, highlights = excluded.highlights,
+  highlights = excluded.highlights,
   cta_label = excluded.cta_label, is_featured = excluded.is_featured,
   sort_order = excluded.sort_order, cover_media_id = excluded.cover_media_id;
 insert into public.rooms (slug, eyebrow, name, short_description, description, capacity,
-  price_per_hour, minimum_hours, highlights, cta_label, is_featured, sort_order, cover_media_id)
+  price_per_hour, highlights, cta_label, is_featured, sort_order, cover_media_id)
 select $q$banya-2$q$, $q$Локація #3$q$, $q$Баня #2 «Ніагара» з водоспадом$q$, $q$Атмосферна парна з потужним контрастним душем.$q$, $q$Атмосферна духмяна парна з написом «Баня мать вторая», запашні сухі трави та потужне перекидне відро-водоспад для максимального заряду ендорфінів.$q$, 6,
-  60000, 2, array[$q$Шоковий контрастний душ «Ніагара» (50 л води)$q$, $q$Трав'яні пучки полину та м'яти під стелею$q$, $q$Затишна кімната відпочинку з дерев'яним столом$q$]::text[], $q$Забронювати лазню$q$, false, 3, m.id
+  60000, array[$q$Шоковий контрастний душ «Ніагара» (50 л води)$q$, $q$Трав'яні пучки полину та м'яти під стелею$q$, $q$Затишна кімната відпочинку з дерев'яним столом$q$]::text[], $q$Забронювати лазню$q$, false, 3, m.id
 from public.media m where m.storage_path = $q$banya-2-entrance.png$q$
 on conflict (slug) do update set
   eyebrow = excluded.eyebrow, name = excluded.name,
   short_description = excluded.short_description, description = excluded.description,
   capacity = excluded.capacity, price_per_hour = excluded.price_per_hour,
-  minimum_hours = excluded.minimum_hours, highlights = excluded.highlights,
+  highlights = excluded.highlights,
   cta_label = excluded.cta_label, is_featured = excluded.is_featured,
   sort_order = excluded.sort_order, cover_media_id = excluded.cover_media_id;
 insert into public.rooms (slug, eyebrow, name, short_description, description, capacity,
-  price_per_hour, minimum_hours, highlights, cta_label, is_featured, sort_order, cover_media_id)
+  price_per_hour, highlights, cta_label, is_featured, sort_order, cover_media_id)
 select $q$chan$q$, $q$Локація #4 • Окремий чан$q$, $q$Карпатський Чан на вогні$q$, $q$Чавунна купіль просто неба, підігріта живим багаттям.$q$, $q$Купіль з литого чавуну під відкритим небом. Дно встелене річковими валунами, свіжа смерека та розслаблюючі лісові збори дарують глибоке омолодження тіла.$q$, 6,
-  80000, 2, array[$q$Натуральна хвоя смереки та річковий камінь$q$, $q$Підвісне крісло-кокон та лаунж-тераса$q$, $q$Контрастне обливання з дубового відра$q$]::text[], $q$Забронювати чан$q$, false, 4, m.id
+  80000, array[$q$Натуральна хвоя смереки та річковий камінь$q$, $q$Підвісне крісло-кокон та лаунж-тераса$q$, $q$Контрастне обливання з дубового відра$q$]::text[], $q$Забронювати чан$q$, false, 4, m.id
 from public.media m where m.storage_path = $q$chan.png$q$
 on conflict (slug) do update set
   eyebrow = excluded.eyebrow, name = excluded.name,
   short_description = excluded.short_description, description = excluded.description,
   capacity = excluded.capacity, price_per_hour = excluded.price_per_hour,
-  minimum_hours = excluded.minimum_hours, highlights = excluded.highlights,
+  highlights = excluded.highlights,
   cta_label = excluded.cta_label, is_featured = excluded.is_featured,
   sort_order = excluded.sort_order, cover_media_id = excluded.cover_media_id;
 
