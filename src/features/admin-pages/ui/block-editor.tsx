@@ -3,6 +3,7 @@
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { useState } from "react";
 
+import { MediaPicker } from "@/features/admin-media";
 import { cn } from "@/shared/lib";
 import { Button } from "@/shared/ui";
 
@@ -138,6 +139,16 @@ export function BlockEditor({
                     label={field.label}
                     options={field.options}
                     value={str(content[field.name]) || (field.options[0]?.value ?? "")}
+                    onChange={(v) => set(field.name, v)}
+                  />
+                );
+              case "image":
+                return (
+                  <MediaPicker
+                    key={field.name}
+                    label={field.label}
+                    hint={field.hint}
+                    value={str(content[field.name]) || undefined}
                     onChange={(v) => set(field.name, v)}
                   />
                 );

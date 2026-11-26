@@ -18,6 +18,7 @@ export type Field =
   | { kind: "textarea"; name: string; label: string; rows?: number; hint?: string }
   | { kind: "switch"; name: string; label: string; hint?: string }
   | { kind: "select"; name: string; label: string; options: { value: string; label: string }[] }
+  | { kind: "image"; name: string; label: string; hint?: string }
   | { kind: "cta"; name: string; label: string }
   | { kind: "stats"; name: string; label: string; hint?: string }
   | { kind: "features"; name: string; label: string; hint?: string };
@@ -31,7 +32,12 @@ const heading: Field[] = [
 export const blockFields: Record<BlockType, Field[]> = {
   hero: [
     ...heading,
-    { kind: "text", name: "backgroundMediaPath", label: "Тло (файл у сховищі)" },
+    {
+      kind: "image",
+      name: "backgroundMediaPath",
+      label: "Тло банера",
+      hint: "Фото на всю ширину, поверх якого лягає заголовок. Світлі кадри працюють гірше: текст по ньому читається погано.",
+    },
     { kind: "cta", name: "primaryCta", label: "Головна кнопка" },
     { kind: "cta", name: "secondaryCta", label: "Друга кнопка" },
     {

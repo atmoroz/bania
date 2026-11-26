@@ -713,8 +713,17 @@ export type Database = {
       }
     }
     Functions: {
+      delete_media: { Args: { ids: string[] }; Returns: number }
       expire_stale_holds: { Args: never; Returns: number }
       is_admin: { Args: never; Returns: boolean }
+      media_usage: {
+        Args: never
+        Returns: {
+          kind: string
+          label: string
+          media_id: string
+        }[]
+      }
       minimum_minutes: {
         Args: { r: Database["public"]["Tables"]["rooms"]["Row"] }
         Returns: number
