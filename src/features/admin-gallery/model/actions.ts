@@ -58,120 +58,43 @@ export async function getGalleryPhotos(): Promise<GalleryPhoto[]> {
   );
 }
 
-export async function setGalleryVisible(id: string, isVisible: boolean): Promise<GalleryResult> {
+/**
+ * What the editor sends back: the gallery exactly as it should end up.
+ *
+ * `id` is null for a photograph that is being added. A row the database has
+ * but the array does not is removed. Position in the array is the order.
+ */
+export type GalleryDraft = {
+  id: string | null;
+  mediaId: string;
+  title: string;
+  caption: string;
+  isVisible: boolean;
+};
+
+/**
+ * Saves the whole gallery in one request and one transaction.
+ *
+ * The first version of this editor wrote on every action — a request per
+ * caption, per hidden tile, per drag. Besides the traffic, it meant two
+ * different rules in one panel: the page editor saves on a button and this
+ * one did not. See `20261126230000_save_gallery.sql`.
+ */
+export async function saveGallery(items: GalleryDraft[]): Promise<GalleryResult> {
   await requireAdmin();
 
   const supabase = await createSupabaseServerClient();
-  const { error } = await supabase
-    .from("gallery_photos")
-    .update({ is_visible: isVisible })
-    .eq("id", id);
+  const { error } = await supabase.rpc("save_gallery", {
+    items: items.map((i) => ({
+      id: i.id,
+      media_id: i.mediaId,
+      title: i.title,
+      caption: i.caption,
+      is_visible: i.isVisible,
+    })),
+  });
 
   if (error) return { ok: false, message: `Не вдалося зберегти: ${error.message}` };
-
-  updateTag(CONTENT_TAG);
-  return { ok: true };
-}
-
-/** Empty text means no caption at all, not a caption that is blank. */
-export async function setGalleryText(
-  id: string,
-  text: { title: string; caption: string },
-): Promise<GalleryResult> {
-  await requireAdmin();
-
-  const supabase = await createSupabaseServerClient();
-  const { error } = await supabase
-    .from("gallery_photos")
-    .update({
-      title: text.title.trim() || null,
-      caption: text.caption.trim() || null,
-    })
-    .eq("id", id);
-
-  if (error) return { ok: false, message: `Не вдалося зберегти підпис: ${error.message}` };
-
-  updateTag(CONTENT_TAG);
-  return { ok: true };
-}
-
-/**
- * Adds files from the library to the **front** of the gallery.
- *
- * At the front because that is where a newly added photograph is looked for:
- * it was just chosen, and the first row is what the visitor sees first. The
- * insert gives the new rows a position before everything else, then the
- * whole gallery is renumbered from one, so the order stays a clean sequence
- * rather than drifting into negative numbers over time.
- */
-export async function addGalleryPhotos(mediaIds: string[]): Promise<GalleryResult> {
-  await requireAdmin();
-  if (mediaIds.length === 0) return { ok: true };
-
-  const supabase = await createSupabaseServerClient();
-
-  const { data: existing } = await supabase
-    .from("gallery_photos")
-    .select("id, sort_order")
-    .is("room_id", null)
-    .order("sort_order");
-
-  const first = existing?.[0]?.sort_order ?? 1;
-
-  const { data: inserted, error } = await supabase
-    .from("gallery_photos")
-    .insert(
-      mediaIds.map((mediaId, i) => ({
-        media_id: mediaId,
-        sort_order: first - mediaIds.length + i,
-        is_visible: true,
-      })),
-    )
-    .select("id");
-
-  if (error) return { ok: false, message: `Не вдалося додати: ${error.message}` };
-
-  const order = [...(inserted ?? []).map((r) => r.id), ...(existing ?? []).map((r) => r.id)];
-  const { error: orderError } = await supabase.rpc("set_gallery_order", { ids: order });
-
-  // The photographs are in the gallery either way; only the numbering is
-  // unfinished, and the next reorder fixes it. Saying nothing would be worse
-  // than saying it is cosmetic.
-  if (orderError) {
-    return { ok: false, message: `Додано, але не вдалося впорядкувати: ${orderError.message}` };
-  }
-
-  updateTag(CONTENT_TAG);
-  return { ok: true };
-}
-
-/**
- * Takes a photograph out of the gallery.
- *
- * The file itself stays in the library — this removes a tile, not an image.
- * Deleting the file is the media tab's job, and it says what that affects.
- */
-export async function removeGalleryPhoto(id: string): Promise<GalleryResult> {
-  await requireAdmin();
-
-  const supabase = await createSupabaseServerClient();
-  const { error } = await supabase.from("gallery_photos").delete().eq("id", id);
-
-  if (error) return { ok: false, message: `Не вдалося прибрати: ${error.message}` };
-
-  updateTag(CONTENT_TAG);
-  return { ok: true };
-}
-
-/** The whole new order in one statement; see the migration for why. */
-export async function reorderGallery(ids: string[]): Promise<GalleryResult> {
-  await requireAdmin();
-  if (ids.length === 0) return { ok: true };
-
-  const supabase = await createSupabaseServerClient();
-  const { error } = await supabase.rpc("set_gallery_order", { ids });
-
-  if (error) return { ok: false, message: `Не вдалося зберегти порядок: ${error.message}` };
 
   updateTag(CONTENT_TAG);
   return { ok: true };

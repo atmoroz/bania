@@ -8,7 +8,9 @@ type Variant = "primary" | "ghost";
 const base =
   "label-caps inline-flex items-center justify-center gap-2 px-7 py-4 " +
   "transition-colors duration-200 focus-visible:outline-2 focus-visible:outline-offset-2 " +
-  "focus-visible:outline-bronze";
+  // A disabled primary button kept its full bronze fill, which reads as the
+  // thing to press next. Dimming it is the only signal that it is not.
+  "focus-visible:outline-bronze disabled:opacity-40";
 
 const variants: Record<Variant, string> = {
   // Solid smoked bronze, warming to ivory on hover.

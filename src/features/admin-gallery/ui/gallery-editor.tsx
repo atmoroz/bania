@@ -1,79 +1,126 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useRef, useState, useTransition } from "react";
-import { Eye, EyeOff, ImagePlus, Trash2 } from "lucide-react";
+import { useEffect, useLayoutEffect, useRef, useState, useTransition } from "react";
+import { Eye, EyeOff, ImagePlus, Loader2, Pencil, Trash2 } from "lucide-react";
 
 import { MediaPickerDialog } from "@/features/admin-media";
 import { cn } from "@/shared/lib";
-import { Button } from "@/shared/ui";
+import { Button, ButtonLink } from "@/shared/ui";
 
 import {
-  addGalleryPhotos,
   getGalleryPhotos,
-  removeGalleryPhoto,
-  reorderGallery,
-  setGalleryText,
-  setGalleryVisible,
+  saveGallery,
   type GalleryPhoto,
-  type GalleryResult,
 } from "../model/actions";
 
-/** Which tile is being dragged, and where it started. */
-type Drag = { id: string; from: number };
+/** A tile being edited. `id` is null until it has been saved once. */
+type Tile = {
+  key: string;
+  id: string | null;
+  mediaId: string;
+  path: string;
+  url: string;
+  alt: string;
+  title: string;
+  caption: string;
+  isVisible: boolean;
+};
+
+/** Which tile is being dragged, where it started, and where it was grabbed. */
+type Drag = { key: string; from: number; grabX: number; grabY: number };
+
+const toTiles = (photos: GalleryPhoto[]): Tile[] =>
+  photos.map((p) => ({ ...p, key: p.id, id: p.id }));
+
+/** Order, captions and visibility, compared without caring about key order. */
+const same = (a: Tile[], b: Tile[]) =>
+  a.length === b.length &&
+  a.every((tile, i) => {
+    const other = b[i];
+    return (
+      other !== undefined &&
+      tile.key === other.key &&
+      tile.title === other.title &&
+      tile.caption === other.caption &&
+      tile.isVisible === other.isVisible
+    );
+  });
 
 /**
  * The venue gallery: what is shown, in what order, with what captions.
  *
- * Laid out as the same grid the public page uses, because the thing being
- * edited here is how the wall of photographs looks — a list of rows shows
- * the order but not the arrangement, and the arrangement is the point.
+ * Laid out as the same grid the public page uses, only smaller, because what
+ * is being edited is how a wall of photographs looks — and to drag one
+ * somewhere you have to see both where it is and where it is going.
  *
- * Everything saves as it is done rather than behind a Save button. The page
- * editor needs one because a page is edited as a whole and previewed before
- * it goes out; a gallery is edited one tile at a time, and a Save button
- * that did not cover dragging would be worse than none.
+ * Nothing is written until Save, like the page editor. The first version
+ * saved every action as it happened, which was a request per caption, per
+ * hidden tile and per drag, and left the panel with two different rules for
+ * what a change costs.
  */
 export function GalleryEditor({ initial }: { initial: GalleryPhoto[] }) {
-  const [items, setItems] = useState(initial);
+  const [saved, setSaved] = useState(() => toTiles(initial));
+  const [items, setItems] = useState(saved);
   const [drag, setDrag] = useState<Drag | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
-  const [, startWork] = useTransition();
+  const [busy, startWork] = useTransition();
 
   const grid = useRef<HTMLUListElement>(null);
-  // Measured during a drag to find which tile the pointer is over.
+  // Measured during a drag to find which tile the pointer is over, and after
+  // every render to animate the ones that moved.
   const tiles = useRef(new Map<string, HTMLLIElement>());
 
   /**
    * The order as it is right now, outside React's render cycle.
    *
-   * `pointerup` has to save what is on screen, and reading the state
+   * `pointerup` has to act on what is on screen, and reading the state
    * variable there reads whatever the last committed render held — which,
-   * during a quick drag, is one move behind. That is not theoretical: the
-   * first drag this was tried on saved the order from halfway through it.
+   * during a quick drag, is one move behind.
    */
-  const order = useRef(initial);
+  const order = useRef(items);
 
-  function setOrder(next: GalleryPhoto[]) {
+  function setOrder(next: Tile[]) {
     order.current = next;
     setItems(next);
   }
 
-  function run(action: () => Promise<GalleryResult>, after?: () => void) {
-    startWork(async () => {
-      const result = await action();
-      setError(result.ok ? null : result.message);
-      if (result.ok) after?.();
-    });
-  }
+  const dirty = !same(items, saved);
 
-  function refresh() {
-    startWork(async () => setOrder(await getGalleryPhotos()));
-  }
+  // ---------------------------------------------------------------------
+  // the slide: tiles animate from where they were to where they now are
+  // ---------------------------------------------------------------------
+
+  const boxes = useRef(new Map<string, DOMRect>());
+
+  useLayoutEffect(() => {
+    for (const [key, node] of tiles.current) {
+      const now = node.getBoundingClientRect();
+      const before = boxes.current.get(key);
+      boxes.current.set(key, now);
+
+      // The dragged tile is already following the pointer; animating it to
+      // its slot as well would fight that.
+      if (!before || key === drag?.key) continue;
+
+      const dx = before.left - now.left;
+      const dy = before.top - now.top;
+      if (dx === 0 && dy === 0) continue;
+
+      node.animate(
+        [{ transform: `translate(${dx}px, ${dy}px)` }, { transform: "translate(0, 0)" }],
+        { duration: 220, easing: "cubic-bezier(0.2, 0.8, 0.2, 1)" },
+      );
+    }
+  }, [items, drag]);
+
+  // ---------------------------------------------------------------------
+  // dragging
+  // ---------------------------------------------------------------------
 
   /** Moves one tile and returns the new order, or null if nothing moved. */
-  function moved(from: number, to: number): GalleryPhoto[] | null {
+  function moved(from: number, to: number): Tile[] | null {
     const list = order.current;
     if (to < 0 || to >= list.length || from === to) return null;
     const next = [...list];
@@ -83,15 +130,18 @@ export function GalleryEditor({ initial }: { initial: GalleryPhoto[] }) {
     return next;
   }
 
-  function commitOrder(list: GalleryPhoto[]) {
-    run(() => reorderGallery(list.map((i) => i.id)));
-  }
-
-  function onPointerDown(event: React.PointerEvent<HTMLButtonElement>, id: string, index: number) {
+  function onPointerDown(event: React.PointerEvent<HTMLButtonElement>, key: string, index: number) {
+    const node = tiles.current.get(key);
+    const box = node?.getBoundingClientRect();
     // preventScroll because focusing a tile further down would otherwise
     // jump the page mid-drag.
     event.currentTarget.focus({ preventScroll: true });
-    setDrag({ id, from: index });
+    setDrag({
+      key,
+      from: index,
+      grabX: box ? event.clientX - box.left : 0,
+      grabY: box ? event.clientY - box.top : 0,
+    });
   }
 
   /**
@@ -99,11 +149,24 @@ export function GalleryEditor({ initial }: { initial: GalleryPhoto[] }) {
    *
    * Not `setPointerCapture` on the tile: capture works until it doesn't — a
    * pointer released outside the window leaves the grid stuck mid-drag.
-   * Listening on the window has neither failure mode, and the listeners
-   * exist only while something is being dragged.
    */
   useEffect(() => {
     if (!drag) return;
+
+    const held = tiles.current.get(drag.key);
+
+    /** Keeps the dragged tile under the pointer, wherever its slot moved to. */
+    const follow = (x: number, y: number) => {
+      if (!held) return;
+      // Measured without the transform, so the offset is from the slot the
+      // tile occupies now rather than from where it was a moment ago.
+      held.style.setProperty("transform", "none");
+      const slot = held.getBoundingClientRect();
+      held.style.setProperty(
+        "transform",
+        `translate(${x - slot.left - drag.grabX}px, ${y - slot.top - drag.grabY}px) scale(1.04)`,
+      );
+    };
 
     const onMove = (event: PointerEvent) => {
       const { clientX: x, clientY: y } = event;
@@ -112,23 +175,25 @@ export function GalleryEditor({ initial }: { initial: GalleryPhoto[] }) {
       // direction: the tile under the pointer is the new position, whether
       // it is beside, above or below.
       const over = order.current.findIndex((item) => {
-        const node = tiles.current.get(item.id);
+        if (item.key === drag.key) return false;
+        const node = tiles.current.get(item.key);
         if (!node) return false;
         const box = node.getBoundingClientRect();
         return x >= box.left && x <= box.right && y >= box.top && y <= box.bottom;
       });
 
-      const current = order.current.findIndex((i) => i.id === drag.id);
-      if (over === -1 || current === -1 || over === current) return;
+      const current = order.current.findIndex((i) => i.key === drag.key);
+      if (over !== -1 && current !== -1) {
+        const next = moved(current, over);
+        if (next) setOrder(next);
+      }
 
-      const next = moved(current, over);
-      if (next) setOrder(next);
+      follow(x, y);
     };
 
     const onUp = () => {
-      const changed = order.current.findIndex((i) => i.id === drag.id) !== drag.from;
+      held?.style.removeProperty("transform");
       setDrag(null);
-      if (changed) commitOrder(order.current);
     };
 
     window.addEventListener("pointermove", onMove);
@@ -139,8 +204,6 @@ export function GalleryEditor({ initial }: { initial: GalleryPhoto[] }) {
       window.removeEventListener("pointerup", onUp);
       window.removeEventListener("pointercancel", onUp);
     };
-    // `moved`, `setOrder` and `commitOrder` read refs and state setters only.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [drag]);
 
   /** How many tiles are on a row right now, straight from the layout. */
@@ -166,9 +229,48 @@ export function GalleryEditor({ initial }: { initial: GalleryPhoto[] }) {
     event.preventDefault();
 
     const next = moved(index, index + step);
-    if (!next) return;
-    setOrder(next);
-    commitOrder(next);
+    if (next) setOrder(next);
+  }
+
+  // ---------------------------------------------------------------------
+  // editing and saving
+  // ---------------------------------------------------------------------
+
+  function patch(key: string, change: Partial<Tile>) {
+    setOrder(order.current.map((t) => (t.key === key ? { ...t, ...change } : t)));
+  }
+
+  function save() {
+    startWork(async () => {
+      const result = await saveGallery(
+        order.current.map((t) => ({
+          id: t.id,
+          mediaId: t.mediaId,
+          title: t.title,
+          caption: t.caption,
+          isVisible: t.isVisible,
+        })),
+      );
+
+      if (!result.ok) {
+        setError(result.message);
+        return;
+      }
+
+      setError(null);
+      // Reloaded rather than assumed: the new rows have ids now, and the
+      // next save has to update them instead of inserting them again.
+      const fresh = toTiles(await getGalleryPhotos());
+      boxes.current.clear();
+      setSaved(fresh);
+      setOrder(fresh);
+    });
+  }
+
+  function discard() {
+    setError(null);
+    boxes.current.clear();
+    setOrder(saved);
   }
 
   const used = items.map((i) => i.path);
@@ -194,189 +296,226 @@ export function GalleryEditor({ initial }: { initial: GalleryPhoto[] }) {
       ) : (
         <ul
           ref={grid}
+          // Far smaller than the public grid, and that is the point: to drag
+          // a photograph somewhere you have to see both ends of the move. At
+          // the site's own size one tile filled a phone screen.
           className={cn(
-            "mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3",
+            "mt-8 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5",
             drag && "select-none",
           )}
         >
           {items.map((item, index) => (
             <li
-              key={item.id}
+              key={item.key}
               ref={(node) => {
-                if (node) tiles.current.set(item.id, node);
-                else tiles.current.delete(item.id);
+                if (node) tiles.current.set(item.key, node);
+                else tiles.current.delete(item.key);
               }}
               className={cn(
                 "flex flex-col border transition-colors",
-                drag?.id === item.id ? "border-bronze opacity-60" : "border-bronze/15",
+                drag?.key === item.key
+                  ? "border-bronze relative z-10 cursor-grabbing"
+                  : "border-bronze/15",
                 !item.isVisible && "border-dashed",
+                item.id === null && "border-sage",
               )}
             >
-              {/* The picture is the handle: in a grid you grab the thing you
-                  are moving, not a dot beside it. */}
-              <button
-                type="button"
-                aria-label={`Перемістити «${item.title || item.path}»`}
-                // preventDefault on mousedown, not on pointerdown: the
-                // latter does not stop the compatibility mouse event, so
-                // the browser still began selecting text as the pointer
-                // swept across the grid — and the selection took the drag
-                // with it.
-                onMouseDown={(e) => e.preventDefault()}
-                onPointerDown={(e) => onPointerDown(e, item.id, index)}
-                onKeyDown={(e) => onTileKeyDown(e, index)}
-                // Without touch-none a touch drag scrolls the page instead.
-                className="group relative block aspect-[4/5] w-full cursor-grab touch-none active:cursor-grabbing"
-              >
+              <div className="relative aspect-[4/5] w-full">
                 <Image
                   src={item.url}
                   alt={item.alt}
                   fill
-                  sizes="(min-width: 1024px) 320px, (min-width: 640px) 45vw, 90vw"
+                  sizes="(min-width: 1024px) 20vw, (min-width: 640px) 30vw, 45vw"
                   className={cn("object-cover", !item.isVisible && "opacity-30")}
                 />
 
-                <span className="label-caps bg-surface-lowest/80 text-bronze absolute top-0 left-0 px-2 py-1 text-[10px]">
+                {/* The picture is the handle: in a grid you grab the thing
+                    you are moving. It sits under the caption fields, so the
+                    only part of the tile that does not start a drag is the
+                    text somebody might be trying to edit. */}
+                <button
+                  type="button"
+                  aria-label={`Перемістити «${item.title || item.path}»`}
+                  // preventDefault on mousedown, not on pointerdown: the
+                  // latter does not stop the compatibility mouse event, so
+                  // the browser still began selecting text as the pointer
+                  // swept across the grid — and the selection took the drag
+                  // with it.
+                  onMouseDown={(e) => e.preventDefault()}
+                  onPointerDown={(e) => onPointerDown(e, item.key, index)}
+                  onKeyDown={(e) => onTileKeyDown(e, index)}
+                  // Without touch-none a touch drag scrolls the page instead.
+                  className="absolute inset-0 cursor-grab touch-none active:cursor-grabbing"
+                />
+
+                <span className="label-caps bg-surface-lowest/80 text-bronze pointer-events-none absolute top-0 left-0 px-1.5 py-0.5 text-[10px]">
                   {index + 1}
                 </span>
 
-                {!item.isVisible ? (
-                  <span className="label-caps bg-surface-lowest/80 absolute top-0 right-0 px-2 py-1 text-[10px]">
+                {item.id === null ? (
+                  <span className="label-caps bg-surface-lowest/80 text-sage pointer-events-none absolute top-0 right-0 px-1.5 py-0.5 text-[10px]">
+                    Нове
+                  </span>
+                ) : !item.isVisible ? (
+                  <span className="label-caps bg-surface-lowest/80 pointer-events-none absolute top-0 right-0 px-1.5 py-0.5 text-[10px]">
                     Приховано
                   </span>
                 ) : null}
 
-                {/* The same caption the site draws, so the tile reads as the
-                    tile it will become. */}
-                {item.title || item.caption ? (
-                  <span className="from-surface-lowest/95 absolute inset-x-0 bottom-0 block bg-gradient-to-t to-transparent p-4 pt-12 text-left">
-                    {item.title ? (
-                      <span className="font-display block text-[15px] leading-5">{item.title}</span>
-                    ) : null}
-                    {item.caption ? (
-                      <span className="text-muted-foreground mt-1 block text-[12px]">
-                        {item.caption}
-                      </span>
-                    ) : null}
-                  </span>
-                ) : null}
-              </button>
-
-              <div className="flex flex-col gap-3 p-4">
                 <PhotoText
-                  item={item}
-                  // The saved values go back into the list, so the field
-                  // knows what is already stored. Without that the baseline
-                  // stayed at whatever the page loaded with, and typing the
-                  // original text back counted as "no change" and was never
-                  // saved.
-                  onSave={(text) =>
-                    run(() => setGalleryText(item.id, text), () =>
-                      setOrder(
-                        order.current.map((p) =>
-                          p.id === item.id
-                            ? { ...p, title: text.title.trim(), caption: text.caption.trim() }
-                            : p,
-                        ),
-                      ),
-                    )
-                  }
+                  title={item.title}
+                  caption={item.caption}
+                  onChange={(change) => patch(item.key, change)}
                 />
+              </div>
 
-                <div className="flex items-center justify-between gap-2">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    className="px-4 py-2"
-                    onClick={() =>
-                      run(() => setGalleryVisible(item.id, !item.isVisible), () =>
-                        setOrder(
-                          order.current.map((p) =>
-                            p.id === item.id ? { ...p, isVisible: !p.isVisible } : p,
-                          ),
-                        ),
-                      )
-                    }
-                  >
-                    {item.isVisible ? (
-                      <Eye className="size-4" aria-hidden />
-                    ) : (
-                      <EyeOff className="size-4" aria-hidden />
-                    )}
-                    {item.isVisible ? "Показано" : "Приховано"}
-                  </Button>
+              <div className="flex items-center justify-between gap-2 p-2">
+                <IconButton
+                  label={item.isVisible ? "Приховати з сайту" : "Показати на сайті"}
+                  onClick={() => patch(item.key, { isVisible: !item.isVisible })}
+                >
+                  {item.isVisible ? (
+                    <Eye className="size-4" aria-hidden />
+                  ) : (
+                    <EyeOff className="size-4" aria-hidden />
+                  )}
+                </IconButton>
 
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    className="px-4 py-2"
-                    aria-label="Прибрати з галереї"
-                    onClick={() => run(() => removeGalleryPhoto(item.id), refresh)}
-                  >
-                    <Trash2 className="size-4" aria-hidden />
-                  </Button>
-                </div>
+                <IconButton
+                  label="Прибрати з галереї"
+                  onClick={() => setOrder(order.current.filter((t) => t.key !== item.key))}
+                >
+                  <Trash2 className="size-4" aria-hidden />
+                </IconButton>
               </div>
             </li>
           ))}
         </ul>
       )}
 
+      {/* One bar for the whole gallery, as on the pages tab: until Save is
+          pressed the site has not changed, and that is said rather than
+          implied. */}
+      <div className="border-bronze/20 mt-10 flex flex-wrap items-center justify-between gap-4 border-t pt-6">
+        <p className="text-muted-foreground text-[13px]">
+          {dirty
+            ? "Є незбережені зміни. На сайті їх ще не видно."
+            : "Усе збережено."}
+        </p>
+
+        <div className="flex flex-wrap items-center gap-3">
+          <ButtonLink href="/gallery" variant="ghost">
+            Сторінка на сайті
+          </ButtonLink>
+          <Button type="button" variant="ghost" disabled={!dirty || busy} onClick={discard}>
+            Скасувати
+          </Button>
+          <Button type="button" disabled={!dirty || busy} onClick={save}>
+            {busy ? <Loader2 className="size-4 animate-spin" aria-hidden /> : null}
+            Зберегти
+          </Button>
+        </div>
+      </div>
+
       <MediaPickerDialog
         open={adding}
         onOpenChange={setAdding}
         current={used}
         multiple
-        onPick={(picked) => run(() => addGalleryPhotos(picked.map((p) => p.id)), refresh)}
+        onPick={(picked) =>
+          setOrder([
+            ...picked.map((p) => ({
+              // No database id yet; the key only has to be unique on screen.
+              key: `new-${p.id}`,
+              id: null,
+              mediaId: p.id,
+              path: p.path,
+              url: p.url,
+              alt: p.alt,
+              title: "",
+              caption: "",
+              isVisible: true,
+            })),
+            ...order.current,
+          ])
+        }
       />
     </>
   );
 }
 
 /**
- * Title and caption, saved when the field is left.
+ * Title and caption, edited where they are shown.
  *
- * On blur rather than on every keystroke: a request per letter would be
- * absurd, and a Save button per tile would be three clicks for a word.
+ * On the photograph rather than in a panel below it, so the tile stays small
+ * enough to drag and what is typed is seen against the picture it belongs to.
+ *
+ * The hard part is making it obvious the text can be changed at all, since it
+ * is styled to look like the site. Three things say so without adding chrome:
+ * a dotted rule under each line, solid bronze on hover and focus; a pencil
+ * that appears on hover; and placeholders, so an empty tile shows the words
+ * rather than nothing.
  */
 function PhotoText({
-  item,
-  onSave,
+  title,
+  caption,
+  onChange,
 }: {
-  item: GalleryPhoto;
-  onSave: (text: { title: string; caption: string }) => void;
+  title: string;
+  caption: string;
+  onChange: (change: { title?: string; caption?: string }) => void;
 }) {
-  const [title, setTitle] = useState(item.title);
-  const [caption, setCaption] = useState(item.caption);
-
-  const save = () => {
-    if (title === item.title && caption === item.caption) return;
-    onSave({ title, caption });
-  };
-
   const field =
-    "border-foreground/20 focus:border-bronze w-full border-b bg-transparent py-1 outline-none transition-colors";
+    "w-full border-b border-dashed border-foreground/30 bg-transparent outline-none " +
+    "transition-colors placeholder:text-foreground/40 " +
+    "hover:border-bronze hover:border-solid focus:border-bronze focus:border-solid " +
+    "focus:bg-surface-lowest/60";
 
   return (
-    <div className="flex flex-col gap-2">
-      <label className="flex flex-col gap-1">
-        <span className="label-caps text-muted-foreground text-[10px]">Заголовок</span>
+    <div className="group/text from-surface-lowest/95 absolute inset-x-0 bottom-0 flex flex-col gap-1 bg-gradient-to-t to-transparent p-2 pt-10">
+      <div className="flex items-end gap-1">
         <input
           value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          onBlur={save}
-          className={cn(field, "text-[14px]")}
+          placeholder="Заголовок"
+          aria-label="Заголовок фото"
+          onChange={(e) => onChange({ title: e.target.value })}
+          className={cn(field, "font-display text-[13px] leading-5")}
         />
-      </label>
-      <label className="flex flex-col gap-1">
-        <span className="label-caps text-muted-foreground text-[10px]">Підпис</span>
-        <input
-          value={caption}
-          onChange={(e) => setCaption(e.target.value)}
-          onBlur={save}
-          className={cn(field, "text-[12px]")}
+        <Pencil
+          className="text-bronze mb-1 size-3 shrink-0 opacity-0 transition-opacity group-hover/text:opacity-100"
+          aria-hidden
         />
-      </label>
+      </div>
+      <input
+        value={caption}
+        placeholder="Підпис"
+        aria-label="Підпис фото"
+        onChange={(e) => onChange({ caption: e.target.value })}
+        className={cn(field, "text-muted-foreground text-[11px] leading-4")}
+      />
     </div>
+  );
+}
+
+/** A square button for one icon, small enough to sit under a small tile. */
+function IconButton({
+  label,
+  onClick,
+  children,
+}: {
+  label: string;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      title={label}
+      onClick={onClick}
+      className="border-bronze/30 text-foreground hover:border-bronze hover:bg-bronze/12 border p-2 transition-colors"
+    >
+      {children}
+    </button>
   );
 }
