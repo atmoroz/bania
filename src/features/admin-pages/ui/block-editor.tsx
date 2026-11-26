@@ -5,11 +5,11 @@ import { useState } from "react";
 
 import { MediaPicker } from "@/features/admin-media";
 import { cn } from "@/shared/lib";
-import { Button } from "@/shared/ui";
+import { Button, SelectField, SwitchField, TextField } from "@/shared/ui";
 
 import type { AdminBlock } from "../model/actions";
 import { blockFields, blockTypeLabel } from "../model/fields";
-import { CtaField, SelectField, SwitchField, TextField } from "./field-inputs";
+import { CtaField } from "./field-inputs";
 import { FeaturesField, StatsField } from "./list-fields";
 
 export type Draft = { content: Record<string, unknown>; isVisible: boolean };

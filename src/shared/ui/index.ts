@@ -10,6 +10,7 @@ export {
   DialogTitle,
   DialogTrigger,
 } from "./dialog";
+export { SelectField, SwitchField, TextField } from "./fields";
 export { LogoMark } from "./logo-mark";
 export { Eyebrow, Section, SectionHeading } from "./section";
 export { ScrollFade } from "./scroll-fade";

@@ -3,9 +3,9 @@
 import { ChevronDown, ChevronUp, Trash2 } from "lucide-react";
 
 import { cn } from "@/shared/lib";
-import { Button } from "@/shared/ui";
+import { Button, SwitchField, TextField } from "@/shared/ui";
 
-import { SwitchField, TextField } from "./field-inputs";
+
 
 type Stat = { value: string; label: string; isVisible: boolean };
 type Feature = { icon: string; title: string; text: string; isVisible: boolean };
