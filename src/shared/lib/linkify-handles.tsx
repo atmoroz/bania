@@ -1,12 +1,13 @@
 import type { ReactNode } from "react";
 
 /**
- * An @handle written in body text becomes a link to that Instagram account.
+ * An @handle written in body text becomes a link to the venue's Instagram.
  *
  * The owner writes "Більше фото в Instagram @staradoroga" into a block's
- * lead, and means it to be clickable. Asking them to paste a URL instead
- * would read worse on the page, and a separate link field would be a second
- * place to keep the same name.
+ * lead and means it to be clickable. The address comes from the settings,
+ * never from the text: the first version built it out of the handle it
+ * found, which sent people to whatever name happened to be written there —
+ * and the name in that lead was two handles out of date.
  *
  * Deliberately narrow: the handle must start a word, so the domain in
  * welcome@staradoroga.ua is left alone, and only the characters Instagram
@@ -14,7 +15,9 @@ import type { ReactNode } from "react";
  */
 const HANDLE = /(^|[\s(])@([A-Za-z0-9_.]{2,30})/g;
 
-export function linkifyHandles(text: string): ReactNode {
+export function linkifyHandles(text: string, href: string | null): ReactNode {
+  if (!href) return text;
+
   const parts: ReactNode[] = [];
   let at = 0;
 
@@ -26,7 +29,7 @@ export function linkifyHandles(text: string): ReactNode {
     parts.push(
       <a
         key={`${handle}-${start}`}
-        href={`https://instagram.com/${handle}`}
+        href={href}
         target="_blank"
         rel="noopener noreferrer"
         className="text-bronze hover:text-foreground underline underline-offset-4 transition-colors"

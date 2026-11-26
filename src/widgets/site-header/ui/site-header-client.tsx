@@ -62,25 +62,6 @@ export function SiteHeaderClient({
           </span>
         </Wordmark>
 
-        {bare ? null : (
-        <nav className="hidden items-center gap-6 lg:flex xl:gap-8" aria-label="Основна навігація">
-          {navigation.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={cn(
-                "label-caps whitespace-nowrap transition-colors",
-                pathname === item.href
-                  ? "text-bronze"
-                  : "text-muted-foreground hover:text-foreground",
-              )}
-            >
-              {item.label}
-            </Link>
-          ))}
-        </nav>
-        )}
-
         <div className="flex items-center gap-4">
           <a
             href={phoneHref}
@@ -91,7 +72,7 @@ export function SiteHeaderClient({
           </a>
 
           {bare ? null : (
-            <ButtonLink href="/booking" className="hidden whitespace-nowrap xl:inline-flex">
+            <ButtonLink href="/booking" className="hidden whitespace-nowrap lg:inline-flex">
               Забронювати
             </ButtonLink>
           )}
@@ -110,6 +91,38 @@ export function SiteHeaderClient({
           )}
         </div>
       </Container>
+
+      {/* The links sit on a second row from the large breakpoint up. They
+          used to share the first one with the wordmark, the phone and the
+          booking button, which fitted six pages and would not fit seven —
+          and the owner can add pages. A row of their own grows instead of
+          overflowing, and scrolls rather than wrapping if it ever has to,
+          since a wrapping row would push the whole page down. */}
+      {bare ? null : (
+        <div className="border-bronze/10 hidden border-t lg:block">
+          <Container>
+            <nav
+              className="-mx-5 flex items-center gap-7 overflow-x-auto px-5 py-3 [scrollbar-width:none] md:-mx-8 md:px-8 lg:-mx-16 lg:px-16 [&::-webkit-scrollbar]:hidden"
+              aria-label="Основна навігація"
+            >
+              {navigation.map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={cn(
+                    "label-caps shrink-0 whitespace-nowrap transition-colors",
+                    pathname === item.href
+                      ? "text-bronze"
+                      : "text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  {item.label}
+                </Link>
+              ))}
+            </nav>
+          </Container>
+        </div>
+      )}
 
       {open && !bare ? (
         <nav

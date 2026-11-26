@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-import { cn, linkifyHandles } from "@/shared/lib";
+import { cn } from "@/shared/lib";
 
 import { Container } from "./container";
 
@@ -54,10 +54,7 @@ export function SectionHeading({
       </div>
       {lead ? (
         <p className="text-muted-foreground mt-5 text-[15px] leading-6 md:text-[18px] md:leading-7">
-          {/* A lead is plain text from the block editor; an @handle in it is
-              meant to be followed. Anything already composed as elements is
-              left as it is. */}
-          {typeof lead === "string" ? linkifyHandles(lead) : lead}
+          {lead}
         </p>
       ) : null}
     </header>

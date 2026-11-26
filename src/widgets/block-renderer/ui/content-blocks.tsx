@@ -9,7 +9,9 @@ import { getReviews, ReviewCard, summarise, writtenOnly } from "@/entities/revie
 import { ReviewForm } from "@/features/review-submit";
 import { getSettings } from "@/entities/settings";
 import { BookingCalendar } from "@/features/booking-hold";
-import { ButtonLink, Card, Section, SectionHeading } from "@/shared/ui";
+import { ButtonLink, Card, Section } from "@/shared/ui";
+
+import { BlockHeading } from "./block-heading";
 
 export async function LocationsBlock({
   content,
@@ -22,7 +24,7 @@ export async function LocationsBlock({
   const locations = staged ?? (await getLocations());
   return (
     <Section>
-      <SectionHeading eyebrow={content.eyebrow} title={content.title} lead={content.lead} />
+      <BlockHeading content={content} />
       <div className="mt-14 grid gap-8 md:grid-cols-2 lg:grid-cols-3">
         {locations.map((location) => (
           <LocationCard
@@ -41,7 +43,7 @@ export async function AddonsBlock({ content }: { content: BlockContent["addons"]
   const addons = await getAddons();
   return (
     <Section className="bg-surface-low">
-      <SectionHeading eyebrow={content.eyebrow} title={content.title} lead={content.lead} />
+      <BlockHeading content={content} />
       <ul className="mt-10 flex flex-col">
         {addons.map((addon) => (
           <AddonRow key={addon.slug} addon={addon} />
@@ -61,7 +63,7 @@ export async function GalleryBlock({
   const photos = staged ?? (await getPhotos());
   return (
     <Section>
-      <SectionHeading eyebrow={content.eyebrow} title={content.title} lead={content.lead} />
+      <BlockHeading content={content} />
       <div className="mt-14 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {photos.map((photo) => (
           <PhotoTile key={photo.id} photo={photo} />
@@ -82,10 +84,8 @@ export async function ReviewsBlock({ content }: { content: BlockContent["reviews
 
   return (
     <Section className="bg-surface-low">
-      <SectionHeading
-        eyebrow={content.eyebrow}
-        title={content.title}
-        lead={content.lead}
+      <BlockHeading
+        content={content}
         // The page is long and the form sits at the bottom of it; without this
         // the only way to find it is to scroll past every review.
         action={
@@ -157,7 +157,7 @@ function ratingCountLabel(count: number): string {
 export function ReviewFormBlock({ content }: { content: BlockContent["review_form"] }) {
   return (
     <Section id="review-form" className="scroll-mt-24">
-      <SectionHeading eyebrow={content.eyebrow} title={content.title} lead={content.lead} />
+      <BlockHeading content={content} />
       <div className="mt-12 max-w-[640px]">
         <ReviewForm />
         {content.note ? (
@@ -172,7 +172,7 @@ export async function ContactsBlock({ content }: { content: BlockContent["contac
   const settings = await getSettings();
   return (
     <Section>
-      <SectionHeading eyebrow={content.eyebrow} title={content.title} lead={content.lead} />
+      <BlockHeading content={content} />
       <div className="mt-14 grid gap-6 md:grid-cols-2">
         <Card className="p-7">
           <Phone className="text-bronze size-5" aria-hidden />
@@ -238,7 +238,7 @@ export async function BookingCtaBlock({ content }: { content: BlockContent["book
 
   return (
     <Section>
-      <SectionHeading eyebrow={content.eyebrow} title={content.title} lead={content.lead} />
+      <BlockHeading content={content} />
 
       {/* The calendar reads ?room= to preselect, which is request-time data;
           Cache Components needs it behind a boundary so the rest of the page
@@ -269,7 +269,7 @@ export async function BookingCtaBlock({ content }: { content: BlockContent["book
 export function RichTextBlock({ content }: { content: BlockContent["rich_text"] }) {
   return (
     <Section>
-      <SectionHeading eyebrow={content.eyebrow} title={content.title} lead={content.lead} />
+      <BlockHeading content={content} />
       {content.body ? (
         <p className="text-muted-foreground mt-6 max-w-3xl text-[15px] leading-6 whitespace-pre-line">
           {content.body}
