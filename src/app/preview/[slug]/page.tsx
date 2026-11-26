@@ -50,7 +50,9 @@ async function Preview({ params }: { params: Promise<{ slug: string }> }) {
         </Container>
       </div>
 
-      <SiteHeader />
+      {/* No navigation: the preview is for looking at one page’s content, and
+          any link out leads to the live site, which does not have these edits. */}
+      <SiteHeader bare />
       <main className="flex-1">
         {blocks.length === 0 ? (
           <Container className="py-24">
@@ -62,7 +64,7 @@ async function Preview({ params }: { params: Promise<{ slug: string }> }) {
           <BlockRenderer blocks={blocks} />
         )}
       </main>
-      <SiteFooter />
+      <SiteFooter bare />
     </div>
   );
 }

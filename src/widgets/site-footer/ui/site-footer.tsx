@@ -12,7 +12,8 @@ const etiquette = [
   "Трав'яні збори та дубові віники",
 ];
 
-export async function SiteFooter() {
+/** `bare` drops the section links, for the preview: see SiteHeaderClient. */
+export async function SiteFooter({ bare = false }: { bare?: boolean } = {}) {
   const [settings, navigation] = await Promise.all([getSettings(), getNavigation()]);
 
   return (
@@ -93,16 +94,20 @@ export async function SiteFooter() {
             ))}
           </ul>
 
-          <p className="label-caps text-bronze mt-8">Розділи</p>
-          <ul className="mt-5 flex flex-col gap-3 text-[15px]">
-            {navigation.map((item) => (
-              <li key={item.href}>
-                <Link href={item.href} className="hover:text-bronze transition-colors">
-                  {item.label}
-                </Link>
-              </li>
-            ))}
-          </ul>
+          {bare ? null : (
+            <>
+              <p className="label-caps text-bronze mt-8">Розділи</p>
+              <ul className="mt-5 flex flex-col gap-3 text-[15px]">
+                {navigation.map((item) => (
+                  <li key={item.href}>
+                    <Link href={item.href} className="hover:text-bronze transition-colors">
+                      {item.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
         </div>
       </Container>
 

@@ -15,6 +15,12 @@ export type HeaderNavItem = { href: string; label: string };
  * The only Client Component on the public site. It exists solely to hold the
  * open/closed state of the mobile menu, so everything it needs arrives as
  * props — no data fetching behind a client boundary.
+ *
+ * `bare` strips every way out of the page — navigation, the mobile menu, the
+ * booking button and the link on the wordmark — leaving the header as a piece
+ * of the design. The preview uses it: it is there to show one page's content,
+ * and a link that walks the viewer off into the live site would only mislead,
+ * because the pages it leads to do not carry the unpublished edits.
  */
 export function SiteHeaderClient({
   wordmark,
@@ -22,24 +28,29 @@ export function SiteHeaderClient({
   phoneDisplay,
   phoneHref,
   navigation,
+  bare = false,
 }: {
   wordmark: string;
   siteTitle: string;
   phoneDisplay: string;
   phoneHref: string;
   navigation: HeaderNavItem[];
+  bare?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
 
   return (
-    <header className="border-bronze/15 bg-background/80 sticky top-0 z-50 border-b backdrop-blur-xl">
+    <header
+      className={cn(
+        "border-bronze/15 bg-background/80 z-50 border-b backdrop-blur-xl",
+        // Not sticky when bare: the preview's own banner holds the top of the
+        // screen, and two sticky bars at top-0 would cover one another.
+        bare ? "relative" : "sticky top-0",
+      )}
+    >
       <Container className="flex h-16 items-center justify-between gap-6 md:h-20">
-        <Link
-          href="/"
-          className="group flex items-center gap-3"
-          onClick={() => setOpen(false)}
-        >
+        <Wordmark asLink={!bare} onNavigate={() => setOpen(false)}>
           <Image
             src="/images/logo.png"
             alt=""
@@ -52,8 +63,9 @@ export function SiteHeaderClient({
             <span className="label-caps text-bronze">{wordmark}</span>
             <span className="font-display mt-1 text-[18px]">{siteTitle}</span>
           </span>
-        </Link>
+        </Wordmark>
 
+        {bare ? null : (
         <nav className="hidden items-center gap-6 lg:flex xl:gap-8" aria-label="Основна навігація">
           {navigation.map((item) => (
             <Link
@@ -70,6 +82,7 @@ export function SiteHeaderClient({
             </Link>
           ))}
         </nav>
+        )}
 
         <div className="flex items-center gap-4">
           <a
@@ -80,10 +93,13 @@ export function SiteHeaderClient({
             {phoneDisplay}
           </a>
 
-          <ButtonLink href="/booking" className="hidden whitespace-nowrap xl:inline-flex">
-            Забронювати
-          </ButtonLink>
+          {bare ? null : (
+            <ButtonLink href="/booking" className="hidden whitespace-nowrap xl:inline-flex">
+              Забронювати
+            </ButtonLink>
+          )}
 
+          {bare ? null : (
           <button
             type="button"
             onClick={() => setOpen((v) => !v)}
@@ -94,10 +110,11 @@ export function SiteHeaderClient({
           >
             {open ? <X className="size-6" /> : <Menu className="size-6" />}
           </button>
+          )}
         </div>
       </Container>
 
-      {open ? (
+      {open && !bare ? (
         <nav
           id="mobile-nav"
           className="border-bronze/15 bg-background border-t lg:hidden"
@@ -125,5 +142,26 @@ export function SiteHeaderClient({
         </nav>
       ) : null}
     </header>
+  );
+}
+
+/** The logo and name: a link home on the site, plain text where there is
+ *  nowhere to go. */
+function Wordmark({
+  asLink,
+  onNavigate,
+  children,
+}: {
+  asLink: boolean;
+  onNavigate: () => void;
+  children: React.ReactNode;
+}) {
+  const className = "group flex items-center gap-3";
+  return asLink ? (
+    <Link href="/" className={className} onClick={onNavigate}>
+      {children}
+    </Link>
+  ) : (
+    <span className={className}>{children}</span>
   );
 }
