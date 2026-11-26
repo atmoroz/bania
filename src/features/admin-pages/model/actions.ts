@@ -2,7 +2,7 @@
 
 import { updateTag } from "next/cache";
 
-import { blockSchemas, type BlockType } from "@/entities/page-block";
+import { blockSchemas, type Block, type BlockContent, type BlockType } from "@/entities/page-block";
 import { CONTENT_TAG, createSupabaseServerClient, getAdmin } from "@/shared/api";
 
 export type AdminPage = {
@@ -20,6 +20,19 @@ export type AdminBlock = {
   isVisible: boolean;
   /** Parsed against the type's schema, so the editor never sees a raw blob. */
   content: Record<string, unknown>;
+  /** An unpublished edit waiting to be looked at, or null. */
+  draft: { content: Record<string, unknown>; isVisible: boolean } | null;
+};
+
+/** The content of a block of any type. */
+type AnyBlockContent = BlockContent[BlockType];
+
+/** One block's unpublished state, as the editor holds it. */
+export type BlockDraft = {
+  id: string;
+  type: BlockType;
+  content: unknown;
+  isVisible: boolean;
 };
 
 export type PageActionResult = { ok: true } | { ok: false; message: string };
@@ -75,7 +88,7 @@ export async function getAdminBlocks(pageSlug: string): Promise<AdminBlock[]> {
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase
     .from("page_blocks")
-    .select("id, block_type, sort_order, is_visible, content")
+    .select("id, block_type, sort_order, is_visible, content, page_block_drafts(content, is_visible)")
     .eq("page_slug", pageSlug)
     .order("sort_order");
 
@@ -85,6 +98,9 @@ export async function getAdminBlocks(pageSlug: string): Promise<AdminBlock[]> {
     const type = row.block_type as BlockType;
     const schema = blockSchemas[type];
     const parsed = schema?.safeParse(row.content);
+    const draftRow = Array.isArray(row.page_block_drafts)
+      ? row.page_block_drafts[0]
+      : row.page_block_drafts;
 
     return {
       id: row.id,
@@ -92,8 +108,163 @@ export async function getAdminBlocks(pageSlug: string): Promise<AdminBlock[]> {
       sortOrder: row.sort_order,
       isVisible: row.is_visible,
       content: (parsed?.success ? parsed.data : (row.content ?? {})) as Record<string, unknown>,
+      draft: draftRow
+        ? {
+            content: (draftRow.content ?? {}) as Record<string, unknown>,
+            isVisible: draftRow.is_visible,
+          }
+        : null,
     };
   });
+}
+
+/**
+ * Validate a set of drafts, refusing the lot if any one of them is wrong.
+ *
+ * All or nothing because they are published together: half a page updated is
+ * a worse outcome than a page that refuses and says which block is at fault.
+ */
+function validate(drafts: BlockDraft[]):
+  | { ok: true; rows: { id: string; content: AnyBlockContent; isVisible: boolean }[] }
+  | { ok: false; message: string } {
+  const rows: { id: string; content: AnyBlockContent; isVisible: boolean }[] = [];
+
+  for (const draft of drafts) {
+    const schema = blockSchemas[draft.type];
+    if (!schema) return { ok: false, message: `Невідомий тип блоку: ${draft.type}` };
+
+    const parsed = schema.safeParse(draft.content);
+    if (!parsed.success) {
+      const first = parsed.error.issues[0];
+      return {
+        ok: false,
+        message: first
+          ? `${first.path.join(".") || "Вміст"}: ${first.message}`
+          : "Некоректний вміст.",
+      };
+    }
+
+    rows.push({ id: draft.id, content: parsed.data, isVisible: draft.isVisible });
+  }
+
+  return { ok: true, rows };
+}
+
+/**
+ * Put the drafts somewhere the preview can render them.
+ *
+ * Nothing public changes: drafts live in their own table, which anonymous
+ * roles hold no grant on at all. This is what makes "look before you publish"
+ * possible without the site moving underneath the visitor.
+ */
+export async function stageDrafts(drafts: BlockDraft[]): Promise<PageActionResult> {
+  await requireAdmin();
+
+  const checked = validate(drafts);
+  if (!checked.ok) return checked;
+
+  const supabase = await createSupabaseServerClient();
+  const { error } = await supabase.from("page_block_drafts").upsert(
+    checked.rows.map((r) => ({
+      block_id: r.id,
+      content: r.content,
+      is_visible: r.isVisible,
+      updated_at: new Date().toISOString(),
+    })),
+  );
+
+  if (error) return { ok: false, message: `Не вдалося зберегти чернетку: ${error.message}` };
+  return { ok: true };
+}
+
+/** Make the drafts the live page, and clear them. */
+export async function publishDrafts(
+  pageSlug: string,
+  drafts: BlockDraft[],
+): Promise<PageActionResult> {
+  await requireAdmin();
+
+  const checked = validate(drafts);
+  if (!checked.ok) return checked;
+
+  const supabase = await createSupabaseServerClient();
+
+  // Sequential rather than parallel: if one fails the owner is told which,
+  // and the blocks before it are already correct. A failed parallel batch
+  // leaves an order nobody can reason about.
+  for (const row of checked.rows) {
+    const { error } = await supabase
+      .from("page_blocks")
+      .update({ content: row.content, is_visible: row.isVisible })
+      .eq("id", row.id);
+
+    if (error) return { ok: false, message: `Не вдалося зберегти: ${error.message}` };
+  }
+
+  await discardDrafts(pageSlug);
+  updateTag(CONTENT_TAG);
+  return { ok: true };
+}
+
+/**
+ * The page as it would look if the drafts were published.
+ *
+ * Parsed through the same schema the public reader uses, and a block whose
+ * draft does not parse falls back to the published version rather than
+ * vanishing — the preview is there to show what the visitor would get, and a
+ * missing block would misrepresent that.
+ */
+export async function getPreviewBlocks(pageSlug: string): Promise<Block[]> {
+  await requireAdmin();
+
+  const supabase = await createSupabaseServerClient();
+  const { data, error } = await supabase
+    .from("page_blocks")
+    .select("id, block_type, is_visible, content, page_block_drafts(content, is_visible)")
+    .eq("page_slug", pageSlug)
+    .order("sort_order");
+
+  if (error) throw new Error(`Failed to load the preview: ${error.message}`);
+
+  return (data ?? []).flatMap((row) => {
+    const type = row.block_type as BlockType;
+    const schema = blockSchemas[type];
+    if (!schema) return [];
+
+    const draftRow = Array.isArray(row.page_block_drafts)
+      ? row.page_block_drafts[0]
+      : row.page_block_drafts;
+
+    const isVisible = draftRow ? draftRow.is_visible : row.is_visible;
+    if (!isVisible) return [];
+
+    const source = draftRow ? draftRow.content : row.content;
+    const parsed = schema.safeParse(source);
+    const fallback = draftRow ? schema.safeParse(row.content) : null;
+    const chosen = parsed.success ? parsed : fallback;
+
+    if (!chosen?.success) return [];
+    return [{ id: row.id, type, content: chosen.data } as Block];
+  });
+}
+
+/** Throw the unpublished edits away. The live page was never touched. */
+export async function discardDrafts(pageSlug: string): Promise<PageActionResult> {
+  await requireAdmin();
+
+  const supabase = await createSupabaseServerClient();
+  const { data: blocks } = await supabase
+    .from("page_blocks")
+    .select("id")
+    .eq("page_slug", pageSlug);
+
+  const ids = (blocks ?? []).map((b) => b.id);
+  if (ids.length === 0) return { ok: true };
+
+  const { error } = await supabase.from("page_block_drafts").delete().in("block_id", ids);
+  if (error) return { ok: false, message: `Не вдалося скасувати: ${error.message}` };
+
+  return { ok: true };
 }
 
 /**

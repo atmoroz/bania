@@ -330,6 +330,35 @@ export type Database = {
           },
         ]
       }
+      page_block_drafts: {
+        Row: {
+          block_id: string
+          content: Json
+          is_visible: boolean
+          updated_at: string
+        }
+        Insert: {
+          block_id: string
+          content: Json
+          is_visible: boolean
+          updated_at?: string
+        }
+        Update: {
+          block_id?: string
+          content?: Json
+          is_visible?: boolean
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "page_block_drafts_block_id_fkey"
+            columns: ["block_id"]
+            isOneToOne: true
+            referencedRelation: "page_blocks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       page_blocks: {
         Row: {
           block_type: Database["public"]["Enums"]["block_type"]
