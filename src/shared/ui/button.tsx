@@ -18,8 +18,15 @@ const variants: Record<Variant, string> = {
     "border border-bronze/40 text-foreground hover:border-bronze hover:bg-bronze/12",
 };
 
-/** tel:, mailto: and absolute URLs are not client-side routes. */
-const isExternal = (href: string) => /^(https?:|tel:|mailto:)/.test(href);
+/**
+ * Links the router should not handle.
+ *
+ * tel:, mailto: and absolute URLs are not client-side routes. Neither is a
+ * bare "#id": that is a position on the page the visitor is already on, and
+ * routing it through next/link navigates without scrolling, so the button
+ * silently does nothing. A plain anchor scrolls, and honours scroll-margin.
+ */
+const isExternal = (href: string) => /^(https?:|tel:|mailto:|#)/.test(href);
 
 export function Button({
   variant = "primary",
