@@ -50,3 +50,10 @@ next-env.d.ts
 # local-only documentation
 /docs/
 /project-documentation/
+
+# belt and braces: env files without a leading dot
+env.local
+env.*.local
+
+# claude code local-only settings (may hold machine-specific config)
+.claude/settings.local.json
