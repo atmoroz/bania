@@ -26,7 +26,7 @@ export function SiteHeader() {
       <Container className="flex h-16 items-center justify-between gap-6 md:h-20">
         <Link
           href="/"
-          className="flex items-center gap-3"
+          className="group flex items-center gap-3"
           onClick={() => setOpen(false)}
         >
           <Image
@@ -35,7 +35,7 @@ export function SiteHeader() {
             width={44}
             height={44}
             priority
-            className="size-11 shrink-0 rounded-full"
+            className="ring-bronze/40 group-hover:ring-bronze size-11 shrink-0 rounded-full ring-1 transition-[--tw-ring-color] duration-200"
           />
           <span className="flex flex-col leading-none whitespace-nowrap">
             <span className="label-caps text-bronze">{siteConfig.wordmark}</span>

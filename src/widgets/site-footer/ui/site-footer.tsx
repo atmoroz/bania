@@ -21,7 +21,7 @@ export function SiteFooter() {
             alt={`Емблема банного комплексу «${siteConfig.name}»`}
             width={112}
             height={112}
-            className="size-28 rounded-full"
+            className="ring-bronze/30 size-28 rounded-full ring-1"
           />
           <p className="label-caps text-bronze mt-6">{siteConfig.wordmark}</p>
           <p className="text-muted-foreground mt-4 max-w-sm text-[15px] leading-6">
