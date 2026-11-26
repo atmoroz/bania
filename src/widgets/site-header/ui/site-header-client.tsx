@@ -105,7 +105,12 @@ export function SiteHeaderClient({
         <div className="border-bronze/10 hidden border-t lg:block">
           <Container>
             <nav
-              className="-mx-5 flex items-center gap-7 overflow-x-auto px-5 py-3 [scrollbar-width:none] md:-mx-8 md:px-8 lg:-mx-16 lg:px-16 [&::-webkit-scrollbar]:hidden"
+              // Spread across the row rather than bunched at the left: the
+              // links are the width of the page's content, and the gap is a
+              // minimum rather than the spacing, so they still read as a row
+              // when there are three of them and still scroll when there are
+              // twelve.
+              className="-mx-5 flex items-center justify-between gap-7 overflow-x-auto px-5 py-3 [scrollbar-width:none] md:-mx-8 md:px-8 lg:-mx-16 lg:px-16 [&::-webkit-scrollbar]:hidden"
               aria-label="Основна навігація"
             >
               {navigation.map((item) => (
