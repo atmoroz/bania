@@ -14,8 +14,12 @@ export function PhotoTile({ photo }: { photo: Photo }) {
       />
       {/* Radial vignette, as the design calls for: steam shadow, not a shadow box. */}
       <figcaption className="from-surface-lowest/95 absolute inset-x-0 bottom-0 bg-gradient-to-t to-transparent p-5 pt-16">
-        <p className="font-display text-[18px] leading-6">{photo.title}</p>
-        <p className="text-muted-foreground mt-1 text-[13px]">{photo.caption}</p>
+        {photo.title ? (
+          <p className="font-display text-[18px] leading-6">{photo.title}</p>
+        ) : null}
+        {photo.caption ? (
+          <p className="text-muted-foreground mt-1 text-[13px]">{photo.caption}</p>
+        ) : null}
       </figcaption>
     </figure>
   );

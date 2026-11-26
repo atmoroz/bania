@@ -1,8 +1,7 @@
-/** A guest review. Maps to the future `reviews` table. */
 export type Review = {
   id: string;
   author: string;
-  context: string;
+  context: string | null;
   body: string;
   rating: number;
 };

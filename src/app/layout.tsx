@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Manrope, Playfair_Display } from "next/font/google";
 
-import { siteConfig } from "@/shared/config/site";
+import { getSettings } from "@/entities/settings";
 
 import "./globals.css";
 
@@ -21,21 +21,26 @@ const manrope = Manrope({
   display: "swap",
 });
 
-export const metadata: Metadata = {
-  metadataBase: new URL(siteConfig.url),
-  title: {
-    default: `${siteConfig.name} — ${siteConfig.tagline}`,
-    template: `%s — ${siteConfig.name}`,
-  },
-  description: siteConfig.description,
-  openGraph: {
-    type: "website",
-    locale: "uk_UA",
-    siteName: siteConfig.name,
-    title: `${siteConfig.name} — ${siteConfig.tagline}`,
-    description: siteConfig.description,
-  },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const settings = await getSettings();
+  const title = `${settings.site_title} — Банний комплекс & Чан`;
+  const description =
+    "Автентичний відпочинок у комплексі «Стара Дорога»: гарячий чавунний чан на дровах, " +
+    "дві парні на дубових дровах, відкритий басейн та крижаний душ-водоспад.";
+
+  return {
+    metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3210"),
+    title: { default: title, template: `%s — ${settings.site_title}` },
+    description,
+    openGraph: {
+      type: "website",
+      locale: "uk_UA",
+      siteName: settings.site_title,
+      title,
+      description,
+    },
+  };
+}
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (

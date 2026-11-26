@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-import { LocationsPage } from "@/views/locations";
+import { DbPage } from "@/views/page";
 
 export const metadata: Metadata = {
   title: "Локації та Чан",
@@ -8,5 +8,5 @@ export const metadata: Metadata = {
 };
 
 export default function Page() {
-  return <LocationsPage />;
+  return <DbPage slug="locations" />;
 }

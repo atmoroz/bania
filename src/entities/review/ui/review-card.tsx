@@ -17,7 +17,9 @@ export function ReviewCard({ review }: { review: Review }) {
       </blockquote>
       <footer className="border-bronze/15 mt-auto border-t pt-5">
         <p className="text-[15px] font-medium">{review.author}</p>
-        <p className="text-muted-foreground mt-1 text-[13px]">{review.context}</p>
+        {review.context ? (
+          <p className="text-muted-foreground mt-1 text-[13px]">{review.context}</p>
+        ) : null}
       </footer>
     </Card>
   );

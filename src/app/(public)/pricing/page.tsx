@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-import { PricingPage } from "@/views/pricing";
+import { DbPage } from "@/views/page";
 
 export const metadata: Metadata = {
   title: "Ціни та пакети",
@@ -8,5 +8,5 @@ export const metadata: Metadata = {
 };
 
 export default function Page() {
-  return <PricingPage />;
+  return <DbPage slug="pricing" />;
 }

@@ -1,5 +1,5 @@
-import { HomePage } from "@/views/home";
+import { DbPage } from "@/views/page";
 
 export default function Page() {
-  return <HomePage />;
+  return <DbPage slug="" />;
 }

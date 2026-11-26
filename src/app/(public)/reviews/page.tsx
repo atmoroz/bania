@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-import { ReviewsPage } from "@/views/reviews";
+import { DbPage } from "@/views/page";
 
 export const metadata: Metadata = {
   title: "Відгуки",
@@ -8,5 +8,5 @@ export const metadata: Metadata = {
 };
 
 export default function Page() {
-  return <ReviewsPage />;
+  return <DbPage slug="reviews" />;
 }

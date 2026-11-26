@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-import { ContactsPage } from "@/views/contacts";
+import { DbPage } from "@/views/page";
 
 export const metadata: Metadata = {
   title: "Контакти",
@@ -8,5 +8,5 @@ export const metadata: Metadata = {
 };
 
 export default function Page() {
-  return <ContactsPage />;
+  return <DbPage slug="contacts" />;
 }

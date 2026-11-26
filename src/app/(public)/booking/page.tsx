@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-import { BookingPage } from "@/views/booking";
+import { DbPage } from "@/views/page";
 
 export const metadata: Metadata = {
   title: "Календар бронювання",
@@ -8,5 +8,5 @@ export const metadata: Metadata = {
 };
 
 export default function Page() {
-  return <BookingPage />;
+  return <DbPage slug="booking" />;
 }

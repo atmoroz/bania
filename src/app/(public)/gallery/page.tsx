@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-import { GalleryPage } from "@/views/gallery";
+import { DbPage } from "@/views/page";
 
 export const metadata: Metadata = {
   title: "Фотогалерея",
@@ -8,5 +8,5 @@ export const metadata: Metadata = {
 };
 
 export default function Page() {
-  return <GalleryPage />;
+  return <DbPage slug="gallery" />;
 }
