@@ -46,3 +46,7 @@ next-env.d.ts
 # supabase cli local state
 /supabase/.temp
 /supabase/.branches
+
+# local-only documentation
+/docs/
+/project-documentation/
