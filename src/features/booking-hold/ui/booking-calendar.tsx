@@ -138,14 +138,16 @@ export function BookingCalendar({
     <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:gap-14">
       <div>
         <p className="label-caps text-bronze">1. Оберіть локацію</p>
-        <div className="mt-4 flex flex-wrap gap-3">
+        {/* A grid, not a wrapping row: content-sized buttons produced a ragged
+            staircase. Equal cells make the choice read as one set of options. */}
+        <div className="mt-4 grid gap-3 sm:grid-cols-2">
           {rooms.map((room) => (
             <button
               key={room.slug}
               type="button"
               onClick={() => chooseRoom(room.slug)}
               className={cn(
-                "border px-4 py-3 text-[15px] transition-colors",
+                "flex h-full items-center justify-center border px-4 py-4 text-center text-[15px] leading-tight transition-colors",
                 room.slug === roomSlug
                   ? "border-bronze bg-sage-deep/40 text-foreground"
                   : "border-bronze/25 text-muted-foreground hover:border-bronze/60",
