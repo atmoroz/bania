@@ -502,17 +502,17 @@
 .ember-hover::after {
   content: "";
   position: absolute;
-  inset: -2px;
-  padding: 2px;
+  inset: -1px;
+  padding: 1px;
   pointer-events: none;
   background: conic-gradient(
     from var(--ember-angle),
     transparent 0deg,
     transparent 205deg,
-    color-mix(in oklab, var(--bronze) 35%, transparent) 250deg,
-    var(--bronze) 295deg,
-    #fff3e0 325deg,
-    var(--bronze) 345deg,
+    color-mix(in oklab, var(--bronze) 30%, transparent) 250deg,
+    color-mix(in oklab, var(--bronze) 90%, transparent) 300deg,
+    #ffe9cd 327deg,
+    color-mix(in oklab, var(--bronze) 90%, transparent) 347deg,
     transparent 360deg
   );
   /* Longhands, not the `mask` shorthand: Chrome aliases `mask` and
@@ -527,12 +527,14 @@
   transition: opacity 0.45s ease;
 }
 
+/* The halo: wider and soft, so a one-pixel line still reads on a dark
+   card without becoming a tube of light. */
 .ember::before,
 .ember-hover::before {
-  inset: -6px;
-  padding: 6px;
+  inset: -5px;
+  padding: 5px;
   z-index: 2;
-  filter: blur(9px);
+  filter: blur(8px);
 }
 
 .ember-hover:hover::before,
@@ -556,7 +558,7 @@
   }
 
   .ember::before {
-    opacity: 0.9;
+    opacity: 0.55;
   }
 
   .ember-hover::before,
