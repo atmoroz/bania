@@ -127,7 +127,11 @@ export async function getAdminDay(roomSlug: string, isoDate: string): Promise<Ad
   return { open: true, slots };
 }
 
-export type ActionResult = { ok: true } | { ok: false; message: string };
+export type ActionResult =
+  | { ok: true }
+  // `stale` means the hold is gone but the hour is free: the owner can
+  // still write whoever is on the telephone into it, as a new booking.
+  | { ok: false; message: string; stale?: true };
 
 /** Turn a hold into a booking. The customer's details arrive from the call. */
 export async function confirmBooking(
@@ -140,7 +144,14 @@ export async function confirmBooking(
   // Optional, as on creation: a slot held by someone who rang off before
   // giving a name is still a slot that is taken.
   const supabase = await createSupabaseServerClient();
-  const { error } = await supabase
+
+  // Only a hold that is still alive. The panel does not poll and a hold
+  // lives ten minutes, so the list on screen is stale more often than
+  // not: without this, confirming a row whose hold had lapsed raised the
+  // booking from the dead and took back an hour the site had already
+  // given to the public. The guard is in the statement, not in a check
+  // beforehand, so two administrators cannot both pass it.
+  const { data: updated, error } = await supabase
     .from("bookings")
     .update({
       status: "CONFIRMED",
@@ -148,9 +159,31 @@ export async function confirmBooking(
       customer_phone: customerPhone.trim() || null,
       hold_expires_at: null,
     })
-    .eq("id", bookingId);
+    .eq("id", bookingId)
+    .eq("status", "PENDING")
+    .gt("hold_expires_at", new Date().toISOString())
+    .select("id");
 
-  if (error) return { ok: false, message: `Не вдалося підтвердити: ${error.message}` };
+  if (error) {
+    const taken = error.message.includes("booking_rooms_no_overlap");
+    return {
+      ok: false,
+      message: taken
+        ? "Цей час уже зайнятий — бронь встигли підтвердити на когось іншого."
+        : `Не вдалося підтвердити: ${error.message}`,
+    };
+  }
+
+  if ((updated ?? []).length === 0) {
+    return {
+      ok: false,
+      stale: true,
+      message:
+        "Гість скасував цю бронь або минули 10 хвилин очікування. " +
+        "Година вільна — можна записати будь-кого іншого просто зараз.",
+    };
+  }
+
   revalidatePath("/admin/bookings");
   return { ok: true };
 }
@@ -159,6 +192,8 @@ export async function cancelBooking(bookingId: string): Promise<ActionResult> {
   await requireAdmin();
 
   const supabase = await createSupabaseServerClient();
+  // No guard here on purpose: cancelling something already cancelled is
+  // the outcome the administrator wanted either way.
   const { error } = await supabase
     .from("bookings")
     .update({ status: "CANCELLED" })

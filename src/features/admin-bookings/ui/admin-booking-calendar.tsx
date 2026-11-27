@@ -54,6 +54,26 @@ const stateStyle: Record<AdminSlot["state"], string> = {
 
 type Pending = { kind: "confirm"; slot: AdminSlot } | { kind: "create"; slot: AdminSlot };
 
+/**
+ * How much of a visitor's hold is left, in words.
+ *
+ * A ten-minute hold looked the same at the fifth second and the five
+ * hundred and ninety-fifth, which is exactly what the owner needs to
+ * know before pressing confirm with somebody on the telephone.
+ */
+function holdLeft(expiresAt: string | null | undefined, nowMs: number): string | null {
+  if (!expiresAt) return null;
+  const left = Math.round((new Date(expiresAt).getTime() - nowMs) / 1000);
+  if (left <= 0) return "час вийшов";
+  if (left < 60) return `${left} с`;
+  return `${Math.ceil(left / 60)} хв`;
+}
+
+function slotsHaveHold(day: AdminDay | null): boolean {
+  if (!day?.open) return false;
+  return day.slots.some((slot) => slot.state === "pending");
+}
+
 export function AdminBookingCalendar({ rooms }: { rooms: AdminRoom[] }) {
   const [roomSlug, setRoomSlug] = useState(rooms[0]?.slug ?? "");
   // Today, expanded, is what the owner needs on opening the page.
@@ -63,6 +83,10 @@ export function AdminBookingCalendar({ rooms }: { rooms: AdminRoom[] }) {
   const [dialog, setDialog] = useState<Pending | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [nowMs, setNowMs] = useState(() => Date.now());
+  // Carried across the switch from confirming to creating, so a name
+  // taken down over the telephone is not lost with the dead hold.
+  const [typed, setTyped] = useState<{ name: string; phone: string } | null>(null);
 
   const isoDate = toIsoDate(date);
 
@@ -76,12 +100,36 @@ export function AdminBookingCalendar({ rooms }: { rooms: AdminRoom[] }) {
   useMatchedHeight(leftColumnRef, rightColumnRef);
 
   useEffect(() => {
-    startLoading(async () => setDay(await getAdminDay(roomSlug, isoDate)));
+    // The failure belonged to the card and day that were on screen when
+    // it happened; carrying it to the next one had the owner reading a
+    // warning about a booking they could no longer see.
+    startLoading(async () => {
+      setError(null);
+      setDay(await getAdminDay(roomSlug, isoDate));
+    });
   }, [roomSlug, isoDate]);
 
   function refresh() {
     startLoading(async () => setDay(await getAdminDay(roomSlug, isoDate)));
   }
+
+  // The day on screen goes stale on its own: holds lapse and visitors
+  // release them, and nothing told the owner. The second it opens, the
+  // page would re-read the day under a half-typed name, so the poll
+  // stands still while the dialog is open.
+  const hasHold = slotsHaveHold(day);
+  useEffect(() => {
+    if (dialog) return;
+    const tick = setInterval(() => setNowMs(Date.now()), 1000);
+    const poll = setInterval(
+      () => void getAdminDay(roomSlug, isoDate).then(setDay),
+      hasHold ? 15_000 : 60_000,
+    );
+    return () => {
+      clearInterval(tick);
+      clearInterval(poll);
+    };
+  }, [dialog, hasHold, roomSlug, isoDate]);
 
   const slots = useMemo(() => (day?.open ? day.slots : []), [day]);
 
@@ -110,6 +158,7 @@ export function AdminBookingCalendar({ rooms }: { rooms: AdminRoom[] }) {
 
   function openDialog(next: Pending) {
     setError(null);
+    setTyped(null);
     setDialog(next);
   }
 
@@ -126,6 +175,13 @@ export function AdminBookingCalendar({ rooms }: { rooms: AdminRoom[] }) {
 
     if (!result.ok) {
       setError(result.message);
+      // The hold died under the owner's hand, but the hour did not: turn
+      // the dialog into a new booking for the same hour so whoever is on
+      // the telephone can be written in without hunting for the row.
+      if (result.stale) {
+        setTyped({ name, phone });
+        setDialog({ kind: "create", slot: { ...dialog.slot, booking: null } });
+      }
       return;
     }
     setError(null);
@@ -205,6 +261,9 @@ export function AdminBookingCalendar({ rooms }: { rooms: AdminRoom[] }) {
                     <p className="text-[15px]">{slot.label}</p>
                     <p className="text-muted-foreground mt-1 text-[13px]">
                       {stateLabel[slot.state]}
+                      {slot.state === "pending" && holdLeft(slot.booking?.holdExpiresAt, nowMs)
+                        ? ` · лишилось ${holdLeft(slot.booking?.holdExpiresAt, nowMs)}`
+                        : ""}
                       {/* Either may be missing, so join what there is rather
                           than hanging a comma off a blank or, worse, hiding a
                           phone number because no name was taken. */}
@@ -276,7 +335,7 @@ export function AdminBookingCalendar({ rooms }: { rooms: AdminRoom[] }) {
               </span>
               <input
                 name="name"
-                defaultValue={dialog?.slot.booking?.customerName ?? ""}
+                defaultValue={typed?.name ?? dialog?.slot.booking?.customerName ?? ""}
                 className="border-foreground/25 focus:border-bronze border-b bg-transparent py-2 text-[15px] outline-none transition-colors"
               />
             </label>
@@ -287,7 +346,7 @@ export function AdminBookingCalendar({ rooms }: { rooms: AdminRoom[] }) {
               <input
                 name="phone"
                 inputMode="tel"
-                defaultValue={dialog?.slot.booking?.customerPhone ?? ""}
+                defaultValue={typed?.phone ?? dialog?.slot.booking?.customerPhone ?? ""}
                 className="border-foreground/25 focus:border-bronze border-b bg-transparent py-2 text-[15px] outline-none transition-colors"
               />
             </label>

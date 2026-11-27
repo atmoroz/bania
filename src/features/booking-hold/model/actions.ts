@@ -229,6 +229,7 @@ export async function placeHold(
     const closed = error.message.includes("the venue is closed");
     const outside = error.message.includes("must fall inside");
     const offGrid = error.message.includes("minute grid");
+    const crowded = error.message.includes("too many unconfirmed holds");
     return {
       ok: false,
       message: taken
@@ -237,17 +238,30 @@ export async function placeHold(
           ? `Кожен відрізок має бути щонайменше ${wanted ? Math.round(wanted / 60) : 2} год поспіль.`
           : closed || outside || offGrid
             ? "Цей час уже поза графіком роботи. Оновіть сторінку та оберіть інший."
-            : "Не вдалося створити бронь. Спробуйте ще раз або зателефонуйте адміністратору.",
+            : crowded
+              ? "Зараз забагато непідтверджених броней. Зателефонуйте адміністратору — він запише вас одразу."
+              : "Не вдалося створити бронь. Спробуйте ще раз або зателефонуйте адміністратору.",
     };
   }
 
+  const ids = (data ?? []) as unknown as string[];
+
+  // The row's own expiry, read straight back through `hold_state`.
+  // Computing it from this server's clock made the countdown run a
+  // round-trip late — precisely in the last seconds, when somebody else
+  // is free to take the hour the visitor still sees as theirs. The
+  // settings value is only the fallback if that read fails.
+  const { data: state } = await supabase.rpc("hold_state", { p_ids: ids }).maybeSingle();
+  const trueExpiry =
+    state && (state as { state: string; expires_at: string | null }).state === "live"
+      ? (state as { expires_at: string | null }).expires_at
+      : null;
+
   return {
     ok: true,
-    bookingIds: (data ?? []) as unknown as string[],
-    // Derived from the same settings row the database read a moment ago.
-    // Not the row's own `hold_expires_at`: `place_hold` returns ids only,
-    // and reading the booking back would need a grant anon must not have.
-    expiresAt: new Date(Date.now() + (settings?.hold_minutes ?? 10) * 60_000).toISOString(),
+    bookingIds: ids,
+    expiresAt:
+      trueExpiry ?? new Date(Date.now() + (settings?.hold_minutes ?? 10) * 60_000).toISOString(),
   };
 }
 
