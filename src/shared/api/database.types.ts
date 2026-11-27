@@ -864,6 +864,7 @@ export type Database = {
         }[]
       }
       room_units: { Args: { p_room_id: string }; Returns: string[] }
+      save_addons: { Args: { payload: Json }; Returns: undefined }
       save_gallery: { Args: { items: Json }; Returns: undefined }
       save_rooms: { Args: { items: Json }; Returns: undefined }
       save_rules: { Args: { payload: Json }; Returns: undefined }

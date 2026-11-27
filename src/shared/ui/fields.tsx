@@ -24,6 +24,7 @@ export function TextField({
   onChange,
   rows,
   type,
+  list,
 }: {
   label: string;
   hint?: string;
@@ -32,6 +33,8 @@ export function TextField({
   rows?: number;
   /** `time` and `date` get the browser's own pickers, which beat ours. */
   type?: "text" | "time" | "date";
+  /** A `<datalist>` id: suggestions while typing, without a fixed set. */
+  list?: string;
 }) {
   return (
     <label className="flex flex-col gap-2">
@@ -46,6 +49,7 @@ export function TextField({
       ) : (
         <input
           type={type ?? "text"}
+          list={list}
           value={value}
           onChange={(e) => onChange(e.target.value)}
           className={cn(inputClass, type && "[color-scheme:dark]")}

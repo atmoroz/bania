@@ -10,6 +10,7 @@ import {
   LogOut,
   MapPin,
   ScrollText,
+  ShoppingBasket,
   Settings,
   Star,
 } from "lucide-react";
@@ -25,6 +26,7 @@ const tabs = [
   { href: "/admin/gallery", label: "Галерея", icon: LayoutGrid },
   { href: "/admin/reviews", label: "Відгуки", icon: Star },
   { href: "/admin/rules", label: "Правила", icon: ScrollText },
+  { href: "/admin/addons", label: "Послуги", icon: ShoppingBasket },
   // The library is where you go to add a file, not to run the place: it
   // sits with the settings rather than among the pages people read.
   { href: "/admin/media", label: "Медіа", icon: Images },
