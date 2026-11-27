@@ -13,6 +13,7 @@ import { BookingCalendar } from "@/features/booking-hold";
 import { ButtonLink, Card, Reveal, Section } from "@/shared/ui";
 
 import { BlockHeading } from "./block-heading";
+import { ReviewSlider } from "./review-slider";
 
 export async function LocationsBlock({
   content,
@@ -111,6 +112,12 @@ export async function ReviewsBlock({ content }: { content: BlockContent["reviews
   // phone by swiping, and degrades to a plain row on a wide screen.
   const isSlider = content.display === "slider";
 
+  // The home page sets a limit of three and sends the reader on with the
+  // button beside the heading; the reviews page sets none. Keyed on the
+  // block's own setting rather than on the display: both pages happen to
+  // use the slider, so limiting by that cut the reviews page to three.
+  const shown = content.limit ? written.slice(0, content.limit) : written;
+
   return (
     <Section className="bg-surface-low">
       <BlockHeading
@@ -146,23 +153,21 @@ export async function ReviewsBlock({ content }: { content: BlockContent["reviews
       ) : null}
 
       {written.length > 0 ? (
-        <div
-          className={
-            isSlider
-              ? "mt-14 -mx-5 flex snap-x snap-mandatory gap-6 overflow-x-auto px-5 pb-4 md:mx-0 md:px-0"
-              : "mt-14 grid gap-8 md:grid-cols-2"
-          }
-        >
-          {written.map((review, i) => (
-            <Reveal
-              key={review.id}
-              delay={Math.min(i, 5) * 0.08}
-              className={isSlider ? "w-[85%] shrink-0 snap-start md:w-[48%]" : undefined}
-            >
-              <ReviewCard review={review} />
-            </Reveal>
-          ))}
-        </div>
+        isSlider ? (
+          // A strip that is obviously a strip: cards narrow enough that the
+          // next one is always cut by the edge, and the edge itself faded
+          // while there is more beyond it. Without both, a row of two and a
+          // half cards reads as a row of two that happens to be clipped.
+          <ReviewSlider reviews={shown} />
+        ) : (
+          <div className="mt-14 grid items-start gap-8 md:grid-cols-2">
+            {shown.map((review, i) => (
+              <Reveal key={review.id} delay={Math.min(i, 5) * 0.08}>
+                <ReviewCard review={review} />
+              </Reveal>
+            ))}
+          </div>
+        )
       ) : null}
 
       {content.ctaLabel && content.ctaHref ? (

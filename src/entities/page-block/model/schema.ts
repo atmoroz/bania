@@ -50,6 +50,12 @@ export const blockSchemas = {
   reviews: z.object({
     ...heading,
     display: z.enum(["grid", "slider"]).default("grid"),
+    /**
+     * How many reviews to show. The home page shows three and sends the
+     * reader on with the button beside the heading; the reviews page
+     * leaves this empty and shows them all.
+     */
+    limit: z.number().int().positive().optional(),
     ctaLabel: z.string().optional(),
     ctaHref: z.string().optional(),
     summaryScore: z.string().optional(),
