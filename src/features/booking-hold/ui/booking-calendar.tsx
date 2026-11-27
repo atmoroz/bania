@@ -699,10 +699,28 @@ export function BookingCalendar({
             .
           </p>
 
-          <ButtonLink href={phoneHref} className="mt-7 w-full">
+          {/* On a phone the number is something to tap, so it is the
+              button. At a desk tapping it opens whatever the computer
+              thinks a dialler is, so the number is text to read and the
+              button closes the window instead. Keyed on the pointer, not
+              on the width: a tablet is narrow and still touched. */}
+          <ButtonLink
+            href={phoneHref}
+            className="mt-7 w-full [@media(pointer:fine)]:hidden"
+          >
             <Phone className="size-4" aria-hidden />
             {phoneDisplay}
           </ButtonLink>
+
+          <div className="mt-7 hidden items-center justify-between gap-5 [@media(pointer:fine)]:flex">
+            <p className="flex items-center gap-2 text-[15px]">
+              <Phone className="text-bronze size-4 shrink-0" aria-hidden />
+              <span className="tabular-nums">{phoneDisplay}</span>
+            </p>
+            <Button type="button" onClick={() => setHeld(null)}>
+              Зрозуміло
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
