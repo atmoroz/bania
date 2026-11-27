@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { Check, Copy, Menu, Phone, X } from "lucide-react";
 
+import { InstallApp } from "@/features/install-app";
 import { cn } from "@/shared/lib";
 import { ButtonLink, Container, LogoMark } from "@/shared/ui";
 
@@ -52,19 +53,30 @@ export function SiteHeaderClient({
           the middle of the header rather than crowding the booking button.
           Below that it is a plain two-item row: the number lives in the
           drawer, where there is room for it. */}
-      <Container className="flex h-16 items-center justify-between gap-6 md:grid md:h-20 md:grid-cols-[1fr_auto_1fr]">
-        <Wordmark asLink={!bare} onNavigate={() => setOpen(false)}>
-          <LogoMark
-            id="header"
-            title=""
-            aria-hidden
-            className="size-11 shrink-0 transition-transform duration-200 group-hover:scale-105"
-          />
-          <span className="flex flex-col leading-none whitespace-nowrap">
-            <span className="label-caps text-bronze">{wordmark}</span>
-            <span className="font-display mt-1 text-[18px]">{siteTitle}</span>
-          </span>
-        </Wordmark>
+      <Container className="flex h-16 items-center justify-between gap-3 sm:gap-6 md:grid md:h-20 md:grid-cols-[1fr_auto_1fr]">
+        <div className="flex min-w-0 items-center gap-3">
+          <Wordmark asLink={!bare} onNavigate={() => setOpen(false)}>
+            <LogoMark
+              id="header"
+              title=""
+              aria-hidden
+              className="size-11 shrink-0 transition-transform duration-200 group-hover:scale-105"
+            />
+            {/* The name truncates rather than pushing: with the install
+                button beside it, a name that refuses to shrink drove the
+                row past the edge and put the button under the menu
+                icon on a narrow screen. */}
+            <span className="flex min-w-0 flex-col leading-none">
+              <span className="label-caps text-bronze truncate">{wordmark}</span>
+              <span className="font-display mt-1 truncate text-[18px]">{siteTitle}</span>
+            </span>
+          </Wordmark>
+
+          {/* Beside the wordmark, where the eye already is. It removes
+              itself in a browser that cannot install and once the app is
+              installed, so most visits never see it. */}
+          {bare ? null : <InstallApp />}
+        </div>
 
         <div className="hidden md:flex md:justify-center">
           <PhoneNumber display={phoneDisplay} href={phoneHref} />
@@ -177,7 +189,7 @@ function Wordmark({
   onNavigate: () => void;
   children: React.ReactNode;
 }) {
-  const className = "group flex items-center gap-3";
+  const className = "group flex min-w-0 items-center gap-3";
   return asLink ? (
     <Link href="/" className={className} onClick={onNavigate}>
       {children}
