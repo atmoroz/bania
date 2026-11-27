@@ -155,8 +155,13 @@ export async function SiteFooter({ bare = false }: { bare?: boolean } = {}) {
       <div className="border-bronze/15 border-t">
         {/* No year here on purpose: a rendered current year forces the page out
             of static prerendering, and a hardcoded one goes stale. */}
-        <Container className="text-muted-foreground py-6 text-[13px]">
-          © Банний комплекс &amp; Чан «{settings.site_title}». Всі права захищено.
+        {/* The legal line, where a legal line is looked for: last,
+            quiet, and beside the copyright rather than in the menu. */}
+        <Container className="text-muted-foreground flex flex-wrap items-center justify-between gap-x-6 gap-y-2 py-6 text-[13px]">
+          <span>© Банний комплекс &amp; Чан «{settings.site_title}». Всі права захищено.</span>
+          <Link href="/privacy" className="hover:text-bronze transition-colors">
+            Політика конфіденційності
+          </Link>
         </Container>
       </div>
     </footer>

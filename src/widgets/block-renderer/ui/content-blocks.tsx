@@ -303,12 +303,22 @@ export async function BookingCtaBlock({ content }: { content: BlockContent["book
   );
 }
 
+/**
+ * A passage of prose.
+ *
+ * Tighter than the other blocks on purpose: those are bands of a page
+ * and want air around them, while several of these in a row are one
+ * document — the privacy page stacked five of them and left a screen of
+ * emptiness between a paragraph and the heading it belongs to.
+ */
 export function RichTextBlock({ content }: { content: BlockContent["rich_text"] }) {
   return (
-    <Section>
+    // Uniform, not first:/last: — every block is rendered inside its own
+    // wrapper, so those variants would match every one of them.
+    <Section className="py-7 md:py-9">
       <BlockHeading content={content} />
       {content.body ? (
-        <p className="text-muted-foreground mt-6 max-w-3xl text-[15px] leading-6 whitespace-pre-line">
+        <p className="text-muted-foreground mt-5 max-w-3xl text-[15px] leading-7 whitespace-pre-line">
           {content.body}
         </p>
       ) : null}
