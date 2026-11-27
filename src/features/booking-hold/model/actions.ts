@@ -28,7 +28,7 @@ export async function getDayAvailability(
 ): Promise<DayAvailability> {
   const supabase = createPublicClient();
 
-  // Release anything whose five minutes are up, so a lapsed hold never shows as
+  // Release anything whose time is up, so a lapsed hold never shows as
   // taken. Cheap, and this is exactly the moment it matters.
   await supabase.rpc("expire_stale_holds");
 
@@ -190,7 +190,7 @@ export type HoldResult =
   | { ok: false; message: string };
 
 /**
- * Place a five-minute hold on the chosen slots.
+ * Place a hold on the chosen slots, for as long as the settings say.
  *
  * All the real work is in the `place_hold` database function: merging contiguous
  * slots, expanding a bundle into its zones, capping concurrent holds, and
@@ -208,7 +208,7 @@ export async function placeHold(
   const supabase = createPublicClient();
   const { data: settings } = await supabase
     .from("settings")
-    .select("slot_step_minutes")
+    .select("slot_step_minutes, hold_minutes")
     .limit(1)
     .single();
 
@@ -236,6 +236,8 @@ export async function placeHold(
   return {
     ok: true,
     bookingIds: (data ?? []) as unknown as string[],
-    expiresAt: new Date(Date.now() + 5 * 60_000).toISOString(),
+    // The length the database used, not a number repeated here: the two
+    // drifting apart would show a countdown that outlives the hold.
+    expiresAt: new Date(Date.now() + (settings?.hold_minutes ?? 10) * 60_000).toISOString(),
   };
 }

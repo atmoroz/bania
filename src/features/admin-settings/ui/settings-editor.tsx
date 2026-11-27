@@ -262,7 +262,7 @@ export function SettingsEditor({ initial }: { initial: VenueConfig }) {
       </Group>
 
       <Group title="Правила бронювання">
-        <div className="grid gap-5 sm:grid-cols-3">
+        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
           <TextField
             label="Мінімум, хвилин"
             hint="Скільки триває найкоротший сеанс. Картка може мати власне значення."
@@ -280,6 +280,12 @@ export function SettingsEditor({ initial }: { initial: VenueConfig }) {
             hint="Через скільки починається наступний можливий сеанс: 60 — щогодини."
             value={String(config.settings.slotStepMinutes)}
             onChange={(v) => set("slotStepMinutes", digits(v, 60))}
+          />
+          <TextField
+            label="Тримати бронь, хвилин"
+            hint="Скільки час лишається за гостем, поки він телефонує. Потім година звільняється сама."
+            value={String(config.settings.holdMinutes)}
+            onChange={(v) => set("holdMinutes", digits(v, 10))}
           />
         </div>
       </Group>

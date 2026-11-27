@@ -18,6 +18,8 @@ export type VenueSettings = {
   minDurationMinutes: number;
   bufferMinutes: number;
   slotStepMinutes: number;
+  /** How long a slot stays held while the guest telephones. */
+  holdMinutes: number;
 };
 
 /** One weekday of the venue's week. `weekday` is Postgres's: 0 is Sunday. */
@@ -140,6 +142,7 @@ export async function getVenueConfig(): Promise<VenueConfig> {
       minDurationMinutes: s.min_duration_minutes,
       bufferMinutes: s.buffer_minutes,
       slotStepMinutes: s.slot_step_minutes,
+      holdMinutes: s.hold_minutes,
     },
     // Always seven rows, whatever the table holds: a weekday with no row is
     // a day the venue is closed, and the form has to be able to open it.
@@ -194,6 +197,7 @@ export async function saveVenueConfig(config: VenueConfig): Promise<SettingsResu
         min_duration_minutes: config.settings.minDurationMinutes,
         buffer_minutes: config.settings.bufferMinutes,
         slot_step_minutes: config.settings.slotStepMinutes,
+        hold_minutes: config.settings.holdMinutes,
       },
       hours: config.hours.map((h) => ({
         weekday: h.weekday,

@@ -696,6 +696,7 @@ export type Database = {
           created_at: string
           email: string | null
           extra_phone_display: string | null
+          hold_minutes: number
           id: boolean
           map_url: string | null
           min_duration_minutes: number
@@ -713,6 +714,7 @@ export type Database = {
           created_at?: string
           email?: string | null
           extra_phone_display?: string | null
+          hold_minutes?: number
           id?: boolean
           map_url?: string | null
           min_duration_minutes?: number
@@ -730,6 +732,7 @@ export type Database = {
           created_at?: string
           email?: string | null
           extra_phone_display?: string | null
+          hold_minutes?: number
           id?: boolean
           map_url?: string | null
           min_duration_minutes?: number

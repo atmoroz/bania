@@ -263,7 +263,9 @@ export function BookingCalendar({
     }
 
     setHeld({ slots: selectedSlots, date });
-    setSecondsLeft(300);
+    // From the hold the server actually made, so the countdown cannot
+    // promise longer than the database will keep it.
+    setSecondsLeft(Math.max(0, Math.round((Date.parse(result.expiresAt) - Date.now()) / 1000)));
     setSelected([]);
     refresh();
   }
