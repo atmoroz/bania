@@ -56,8 +56,13 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
+    // suppressHydrationWarning: the head script below writes data-js on
+    // this element before hydration, which React otherwise reports as a
+    // mismatch — and in development that aborted the admin shell's
+    // Suspense boundary and left it stuck on "Перевіряємо доступ…".
     <html
       lang="uk"
+      suppressHydrationWarning
       className={`${playfair.variable} ${manrope.variable} h-full antialiased`}
     >
       <head>
@@ -68,7 +73,14 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           dangerouslySetInnerHTML={{ __html: `document.documentElement.dataset.js="1"` }}
         />
       </head>
-      <body className="bg-background text-foreground flex min-h-full flex-col font-sans">
+      {/* Also suppressed here: browser extensions stamp attributes onto
+          <body> before React hydrates, and in development that mismatch
+          was enough to abandon hydration and leave the admin shell on
+          its loading line. */}
+      <body
+        suppressHydrationWarning
+        className="bg-background text-foreground flex min-h-full flex-col font-sans"
+      >
         {children}
       </body>
     </html>
