@@ -33,7 +33,6 @@ import {
   DialogContent,
   DialogDescription,
   DialogTitle,
-  ScrollFade,
   SlotListSkeleton,
 } from "@/shared/ui";
 
@@ -513,50 +512,45 @@ export function BookingCalendar({
             </p>
           </div>
         ) : (
-          <ScrollFade scrollRef={listRef} className="border-bronze/10 mt-5 border-y">
-            <ul
-              ref={listRef}
-              className="relative flex max-h-[380px] min-h-0 flex-1 flex-col gap-3 overflow-y-auto py-3 lg:max-h-none"
-            >
+          // A grid, not a scrolling column. Sixteen rows at sixty-eight
+          // pixels each needed an inner scroller, which fought the page's
+          // own scroll and carried the chosen hour off the top edge; the
+          // same day fits on one screen as three columns of chips, and
+          // the hours read as a day rather than as a list.
+          <ul ref={listRef} className="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-3">
               {slots.map((slot, index) => {
                 const isSelected = selected.includes(slot.startsAt);
                 const isFirstOpen = index === firstOpenIndex;
                 return (
-                  <li key={slot.startsAt} ref={isFirstOpen ? firstOpenRef : null} className="shrink-0">
+                  <li key={slot.startsAt} ref={isFirstOpen ? firstOpenRef : null}>
                     <button
                       type="button"
                       onClick={() => toggle(slot)}
                       disabled={slot.state !== "free"}
                       aria-pressed={isSelected}
+                      aria-label={`${slot.label} — ${stateLabels[slot.state]}`}
                       className={cn(
-                        "flex w-full items-center justify-between border px-5 py-4 text-left transition-colors",
+                        "flex h-full w-full flex-col items-center justify-center gap-1 border px-2 py-3 text-center transition-colors",
                         stateStyles[slot.state],
                         isSelected && "border-bronze bg-sage-deep/40",
                       )}
                     >
-                      <span className="flex items-center gap-3 text-[15px]">
-                        {isSelected ? (
-                          <Check className="text-bronze size-4" aria-hidden />
-                        ) : (
-                          <span
-                            className={cn(
-                              "size-1.5 rounded-full",
-                              slot.state === "free" ? "bg-sage" : "bg-muted-foreground/50",
-                            )}
-                            aria-hidden
-                          />
-                        )}
+                      <span className="flex items-center gap-2 text-[15px] whitespace-nowrap">
+                        {isSelected ? <Check className="text-bronze size-4" aria-hidden /> : null}
                         {slot.label}
                       </span>
-                      <span className="label-caps text-muted-foreground">
-                        {stateLabels[slot.state]}
-                      </span>
+                      {/* Only when it is not free: "вільно" on twelve chips
+                          is noise, and the empty line is the information. */}
+                      {slot.state !== "free" ? (
+                        <span className="label-caps text-muted-foreground text-[10px]">
+                          {stateLabels[slot.state]}
+                        </span>
+                      ) : null}
                     </button>
                   </li>
                 );
               })}
-            </ul>
-          </ScrollFade>
+          </ul>
         )}
 
         {!isLoading && slots.some((slot) => slot.state === "held") ? (

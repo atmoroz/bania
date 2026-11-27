@@ -28,6 +28,12 @@ export function HeroBlock({ content }: { content: BlockContent["hero"] }) {
       ) : null}
 
       <Container className="flex min-h-[80vh] flex-col justify-end py-20 md:min-h-[88vh] md:py-28">
+        {/* The words sit on their own panel. Invisible in the dark
+            theme, where light type on a dark photograph needs nothing;
+            paper in the light one, where it needs everything — this is
+            how the owner's light design does it too, text on a card
+            beside the picture rather than printed over it. */}
+        <div className="hero-panel">
         {content.eyebrow ? <p className="label-caps text-bronze">{content.eyebrow}</p> : null}
 
         {content.title ? (
@@ -54,6 +60,7 @@ export function HeroBlock({ content }: { content: BlockContent["hero"] }) {
             ) : null}
           </div>
         ) : null}
+        </div>
 
         {/* Each statistic is hidden individually from the admin panel, so an
             empty list simply removes the strip. */}

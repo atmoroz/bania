@@ -175,16 +175,33 @@
   --sidebar-ring: #96682f;
 }
 
-/* Dark type over a lit photograph needs more paper under it than light
-   type over a dark one, so the hero's wash is heavier in this theme. */
+/* On paper the photograph keeps more of itself: the words no longer sit
+   on it, they sit on the panel below. Just enough wash at the foot to
+   carry the figures and to meet the next section. */
 [data-theme="light"] .hero-wash {
   background-image: linear-gradient(
     to top,
     var(--background) 0%,
-    color-mix(in oklab, var(--background) 94%, transparent) 42%,
-    color-mix(in oklab, var(--background) 62%, transparent) 78%,
-    color-mix(in oklab, var(--background) 35%, transparent) 100%
+    color-mix(in oklab, var(--background) 82%, transparent) 26%,
+    color-mix(in oklab, var(--background) 30%, transparent) 62%,
+    transparent 100%
   );
+}
+
+/* The panel the hero's words stand on. Nothing in the dark theme, where
+   the photograph is already dark enough to print on. */
+[data-theme="light"] .hero-panel {
+  max-width: 46rem;
+  padding: 2rem;
+  background-color: color-mix(in oklab, var(--surface-container) 88%, transparent);
+  border: 1px solid color-mix(in oklab, var(--bronze) 22%, transparent);
+  backdrop-filter: blur(6px);
+}
+
+@media (min-width: 768px) {
+  [data-theme="light"] .hero-panel {
+    padding: 2.75rem;
+  }
 }
 
 /* The page's own background follows the theme without a flash of the
