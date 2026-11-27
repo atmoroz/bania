@@ -51,8 +51,8 @@
 :root {
   /* --------------------------------------------------------------------
      "Vogon Sanctuary" tokens, taken from the Stitch design export.
-     The site is dark only: there is no light theme, so these live in
-     :root rather than in .dark.
+     The dark set is the default and lives here; the light set, added to
+     the design later, overrides it under [data-theme="light"] below.
      -------------------------------------------------------------------- */
 
   /* surfaces, darkest to lightest */
@@ -109,6 +109,89 @@
   --sidebar-accent-foreground: var(--foreground);
   --sidebar-border: #4f453c;
   --sidebar-ring: var(--bronze);
+}
+
+/* ---------------------------------------------------------------------------
+   "Organic Sanctuary": the light half of the same design
+   ---------------------------------------------------------------------------
+   The owner's palette, as drawn: primary #B38646, secondary #8C4A2F,
+   tertiary #4A5D4E, neutral #23201B, on warm cream paper. The same
+   emblem, the same type, the same square corners — only the light is
+   different, which is the point of a sanctuary at noon rather than at
+   night.
+
+   Chosen by the visitor and remembered; a one-line script in <head>
+   applies it before the first paint, so the page never flashes the
+   other theme. Keyed on an attribute rather than a class because that
+   script has to be able to set it on <html> before React exists. */
+
+[data-theme="light"] {
+  /* surfaces, lightest to deepest */
+  --surface-lowest: #fdfaf4;
+  --surface-low: #f4ede1;
+  --surface-container: #fbf6ed;
+  --surface-high: #ece3d4;
+  --surface-highest: #e3d8c6;
+  --surface-bright: #ffffff;
+
+  /* brand accents, darkened so they carry on paper */
+  --bronze: #96682f;
+  --bronze-deep: #6f4c21;
+  --sage: #3f5345;
+  --sage-deep: #cfdbd1;
+  --fog: #6b7a6c;
+
+  --background: #f7f1e6;
+  --foreground: #23201b;
+  --card: var(--surface-container);
+  --card-foreground: var(--foreground);
+  --popover: var(--surface-container);
+  --popover-foreground: var(--foreground);
+  --primary: #b38646;
+  --primary-foreground: #ffffff;
+  --secondary: #8c4a2f;
+  --secondary-foreground: #ffffff;
+  --muted: var(--surface-high);
+  --muted-foreground: #6a5f52;
+  --accent: var(--surface-highest);
+  --accent-foreground: var(--foreground);
+  --destructive: #a22c21;
+  --border: #d8cab2;
+  --input: #d8cab2;
+  --ring: #96682f;
+
+  --chart-1: #b38646;
+  --chart-2: #4a5d4e;
+  --chart-3: #8c4a2f;
+  --chart-4: #6f4c21;
+  --chart-5: #d8cab2;
+  --sidebar: var(--surface-low);
+  --sidebar-foreground: var(--foreground);
+  --sidebar-primary: #b38646;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: var(--surface-high);
+  --sidebar-accent-foreground: var(--foreground);
+  --sidebar-border: #d8cab2;
+  --sidebar-ring: #96682f;
+}
+
+/* Dark type over a lit photograph needs more paper under it than light
+   type over a dark one, so the hero's wash is heavier in this theme. */
+[data-theme="light"] .hero-wash {
+  background-image: linear-gradient(
+    to top,
+    var(--background) 0%,
+    color-mix(in oklab, var(--background) 94%, transparent) 42%,
+    color-mix(in oklab, var(--background) 62%, transparent) 78%,
+    color-mix(in oklab, var(--background) 35%, transparent) 100%
+  );
+}
+
+/* The page's own background follows the theme without a flash of the
+   other one while the fonts load. */
+[data-theme="light"] body {
+  background-color: var(--background);
+  color: var(--foreground);
 }
 
 .dark {

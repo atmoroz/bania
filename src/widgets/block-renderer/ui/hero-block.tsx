@@ -19,7 +19,11 @@ export function HeroBlock({ content }: { content: BlockContent["hero"] }) {
             sizes="100vw"
             className="object-cover"
           />
-          <div className="from-background via-background/80 to-background/40 absolute inset-0 bg-gradient-to-t" />
+          {/* The wash that lets the words sit on the photograph. On
+              paper it has to be heavier: dark text over a lit photograph
+              needs more of the page showing through than light text over
+              a dark one. See globals.css. */}
+          <div className="hero-wash from-background via-background/80 to-background/40 absolute inset-0 bg-gradient-to-t" />
         </div>
       ) : null}
 

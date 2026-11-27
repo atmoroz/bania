@@ -68,9 +68,18 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <head>
         {/* Before the first paint: the scroll-reveal styles only hide
             anything once this has run, so a visitor without JavaScript
-            reads the whole page instead of blank sections. */}
+            reads the whole page instead of blank sections. The theme is
+            restored here for the same reason — after hydration would be
+            a flash of the wrong one. */}
         <script
-          dangerouslySetInnerHTML={{ __html: `document.documentElement.dataset.js="1"` }}
+          dangerouslySetInnerHTML={{
+            __html:
+              `document.documentElement.dataset.js="1";` +
+              // Before the first paint, so a visitor who chose the light
+              // theme never sees the dark one flash past.
+              `try{if(localStorage.getItem("bania.theme")==="light")` +
+              `document.documentElement.dataset.theme="light"}catch(e){}`,
+          }}
         />
       </head>
       {/* Also suppressed here: browser extensions stamp attributes onto

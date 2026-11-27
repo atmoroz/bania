@@ -244,8 +244,29 @@ export async function placeHold(
   return {
     ok: true,
     bookingIds: (data ?? []) as unknown as string[],
-    // The length the database used, not a number repeated here: the two
-    // drifting apart would show a countdown that outlives the hold.
+    // Derived from the same settings row the database read a moment ago.
+    // Not the row's own `hold_expires_at`: `place_hold` returns ids only,
+    // and reading the booking back would need a grant anon must not have.
     expiresAt: new Date(Date.now() + (settings?.hold_minutes ?? 10) * 60_000).toISOString(),
   };
+}
+
+/**
+ * Lets go of a hold this browser made.
+ *
+ * The ids were handed to the browser that created them and a uuid cannot
+ * be guessed, so holding them is the proof of ownership — the same
+ * argument that lets an anonymous page create the hold at all. The
+ * database refuses anything that is not a live PENDING hold.
+ */
+export async function releaseHold(bookingIds: string[]): Promise<{ released: number }> {
+  if (bookingIds.length === 0) return { released: 0 };
+
+  const supabase = createPublicClient();
+  const { data, error } = await supabase.rpc("release_hold", { p_ids: bookingIds });
+
+  // A failure here is not worth an error on screen: the hold lapses by
+  // itself within minutes, which is the same outcome a little later.
+  if (error) return { released: 0 };
+  return { released: data ?? 0 };
 }

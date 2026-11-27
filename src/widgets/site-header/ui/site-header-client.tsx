@@ -7,7 +7,7 @@ import { Check, Copy, Menu, Phone, X } from "lucide-react";
 
 import { InstallApp } from "@/features/install-app";
 import { cn } from "@/shared/lib";
-import { ButtonLink, Container, LogoMark } from "@/shared/ui";
+import { ButtonLink, Container, LogoMark, ThemeSwitch } from "@/shared/ui";
 
 export type HeaderNavItem = { href: string; label: string };
 
@@ -82,7 +82,12 @@ export function SiteHeaderClient({
           <PhoneNumber display={phoneDisplay} href={phoneHref} />
         </div>
 
-        <div className="flex items-center gap-4 md:justify-self-end">
+        <div className="flex items-center gap-3 md:justify-self-end md:gap-4">
+          {/* Day or night. Beside the booking button rather than beside
+              the wordmark: the left of the header belongs to the brand,
+              and this is a preference, not an invitation. */}
+          {bare ? null : <ThemeSwitch />}
+
           {bare ? null : (
             <ButtonLink
               href="/booking"

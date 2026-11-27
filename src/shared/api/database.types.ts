@@ -826,6 +826,7 @@ export type Database = {
         }
         Returns: string[]
       }
+      release_hold: { Args: { p_ids: string[] }; Returns: number }
       room_locks: {
         Args: never
         Returns: {

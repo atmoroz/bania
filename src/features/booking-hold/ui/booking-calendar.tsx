@@ -1,7 +1,14 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useRef, useState, useTransition } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+  useTransition,
+} from "react";
 import { Check, Loader2, Phone } from "lucide-react";
 
 // Straight from the modules, not the slice barrel: the barrel also exports
@@ -34,6 +41,7 @@ import {
   getDayAvailability,
   getRangeAvailability,
   placeHold,
+  releaseHold,
   type DayAvailability,
 } from "../model/actions";
 
@@ -69,6 +77,80 @@ const stateStyles: Record<Slot["state"], string> = {
   held: "border-bronze/10 text-muted-foreground cursor-not-allowed",
   past: "border-bronze/10 text-muted-foreground opacity-40 cursor-not-allowed",
 };
+
+/**
+ * The hold this browser made, kept across reloads.
+ *
+ * Only what the page needs to show it and to let it go. The ids are the
+ * ownership: they were returned to this browser and nowhere else.
+ */
+type MyHold = {
+  ids: string[];
+  expiresAt: string;
+  roomSlug: string;
+  roomName: string;
+  dateLabel: string;
+  from: string;
+  to: string;
+  hours: number;
+};
+
+const HOLD_KEY = "bania.hold";
+const HOLD_EVENT = "bania:hold";
+
+/**
+ * localStorage as an external store, read with useSyncExternalStore.
+ *
+ * Not an effect that calls setState on mount: that renders twice for
+ * nothing and the compiler refuses it. Subscribing also means a second
+ * tab of the same site sees the hold appear and disappear.
+ */
+function subscribeToHold(onChange: () => void) {
+  window.addEventListener(HOLD_EVENT, onChange);
+  window.addEventListener("storage", onChange);
+  return () => {
+    window.removeEventListener(HOLD_EVENT, onChange);
+    window.removeEventListener("storage", onChange);
+  };
+}
+
+function rawHold(): string | null {
+  try {
+    return window.localStorage.getItem(HOLD_KEY);
+  } catch {
+    return null;
+  }
+}
+
+function parseHold(raw: string | null): MyHold | null {
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw) as MyHold;
+    // Written by an older version of this code, or nonsense.
+    return Array.isArray(parsed.ids) && typeof parsed.expiresAt === "string" ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeMyHold(hold: MyHold) {
+  try {
+    window.localStorage.setItem(HOLD_KEY, JSON.stringify(hold));
+  } catch {
+    // Private browsing, a full quota: the hold still exists in the
+    // database and still lapses on its own. Nothing to tell anyone.
+  }
+  window.dispatchEvent(new Event(HOLD_EVENT));
+}
+
+function clearMyHold() {
+  try {
+    window.localStorage.removeItem(HOLD_KEY);
+  } catch {
+    // As above.
+  }
+  window.dispatchEvent(new Event(HOLD_EVENT));
+}
 
 const stateLabels: Record<Slot["state"], string> = {
   free: "Вільно",
@@ -112,7 +194,23 @@ export function BookingCalendar({
   const [held, setHeld] = useState<{ slots: Slot[]; date: Date } | null>(null);
   const [holdError, setHoldError] = useState<string | null>(null);
   const [isHolding, setIsHolding] = useState(false);
-  const [secondsLeft, setSecondsLeft] = useState(0);
+  const [isReleasing, setIsReleasing] = useState(false);
+
+  /**
+   * The hold this browser owns, and the clock that counts it down.
+   *
+   * Both are read rather than stored twice: `mine` comes from
+   * localStorage through the store above, and the seconds left are
+   * arithmetic on it. A reload therefore restores the countdown instead
+   * of showing free hours the database is still holding — which is
+   * exactly what it used to do.
+   */
+  const storedRaw = useSyncExternalStore(subscribeToHold, rawHold, () => null);
+  const mine = useMemo(() => parseHold(storedRaw), [storedRaw]);
+  const [nowMs, setNowMs] = useState(() => Date.now());
+  const secondsLeft = mine
+    ? Math.max(0, Math.round((Date.parse(mine.expiresAt) - nowMs) / 1000))
+    : 0;
 
   const isoDate = toIsoDate(date);
 
@@ -184,13 +282,17 @@ export function BookingCalendar({
     [availability, isLoading],
   );
 
-  // The hold lives five minutes. The countdown is the honest part of the
-  // promise: when it reaches zero the slot really is free again.
+  // One clock while a hold is running. When it reaches the expiry the
+  // stored hold is dropped, which is also what the database has done by
+  // then, and the store notifies everything that reads it.
   useEffect(() => {
-    if (secondsLeft <= 0) return;
-    const id = setInterval(() => setSecondsLeft((s) => Math.max(0, s - 1)), 1000);
+    if (!mine) return;
+    const id = setInterval(() => {
+      setNowMs(Date.now());
+      if (Date.parse(mine.expiresAt) <= Date.now()) clearMyHold();
+    }, 1000);
     return () => clearInterval(id);
-  }, [secondsLeft]);
+  }, [mine]);
 
   const slots = useMemo(
     () => (availability?.open ? availability.slots : []),
@@ -271,10 +373,31 @@ export function BookingCalendar({
     }
 
     setHeld({ slots: selectedSlots, date });
-    // From the hold the server actually made, so the countdown cannot
-    // promise longer than the database will keep it.
-    setSecondsLeft(Math.max(0, Math.round((Date.parse(result.expiresAt) - Date.now()) / 1000)));
+
+    const stored: MyHold = {
+      ids: result.bookingIds,
+      expiresAt: result.expiresAt,
+      roomSlug,
+      roomName: chosenRoom?.name ?? "",
+      dateLabel: formatVenueDate(date.toISOString()),
+      from: selectedSlots[0]?.label.split(" — ")[0] ?? "",
+      to: selectedSlots[selectedSlots.length - 1]?.label.split(" — ")[1] ?? "",
+      hours: selectedSlots.length,
+    };
+    writeMyHold(stored);
+    setNowMs(Date.now());
     setSelected([]);
+    refresh();
+  }
+
+  /** One press frees every hour of the hold, not one at a time. */
+  async function release() {
+    if (!mine) return;
+    setIsReleasing(true);
+    await releaseHold(mine.ids);
+    setIsReleasing(false);
+    clearMyHold();
+    setHeld(null);
     refresh();
   }
 
@@ -436,6 +559,13 @@ export function BookingCalendar({
           </ScrollFade>
         )}
 
+        {!isLoading && slots.some((slot) => slot.state === "held") ? (
+          <p className="text-muted-foreground mt-4 text-[12px] leading-5">
+            «Утримується» — хтось обрав цю годину, але ще не підтвердив її дзвінком.
+            Якщо потрібен саме цей час, запитайте адміністратора.
+          </p>
+        ) : null}
+
         {holdError ? (
           <p className="text-destructive mt-5 text-[15px]">{holdError}</p>
         ) : null}
@@ -445,48 +575,91 @@ export function BookingCalendar({
             selection exists. Hidden on a day with nothing left: a disabled
             "minimum two hours" under "this day is full" answers a question
             nobody is asking. */}
-        {/* The summary sits directly above the button, so the last thing
-            read before committing is what is being committed to. */}
-        {selectedSlots.length > 0 && !dayIsFull && availability?.open !== false ? (
-          <div className="border-bronze/20 mt-8 flex flex-col gap-2 border p-5">
-            <p className="text-[15px]">{chosenRoom?.name}</p>
+        {/* A hold this browser owns: what it is, that it is not yet a
+            booking, and the two things to do about it. It replaces the
+            confirm button, because with a hold running there is nothing
+            to confirm until this one is settled. */}
+        {mine && holdIsLive ? (
+          <div className="border-bronze/30 mt-8 flex flex-col gap-3 border p-5">
+            <p className="label-caps text-bronze">Ваша бронь</p>
+            <p className="text-[15px]">{mine.roomName}</p>
             <p className="text-muted-foreground text-[13px] leading-5">
-              {formatVenueDate(date.toISOString())} ·{" "}
-              {selectedSlots[0]?.label.split(" — ")[0]} —{" "}
-              {selectedSlots[selectedSlots.length - 1]?.label.split(" — ")[1]} ·{" "}
-              {selectedSlots.length} год
+              {mine.dateLabel} · {mine.from} — {mine.to} · {mine.hours} год
             </p>
-            {total !== null ? (
-              <p className="border-bronze/15 mt-2 flex items-baseline justify-between border-t pt-3">
-                <span className="label-caps text-muted-foreground">До сплати</span>
-                <span className="text-bronze text-[18px]">{formatHryvnia(total)}</span>
-              </p>
-            ) : null}
-          </div>
-        ) : null}
+            <p className="text-muted-foreground text-[13px] leading-5">
+              Ще не підтверджена. Зателефонуйте адміністратору, щоб закріпити цей час:
+              без дзвінка години звільняться через{" "}
+              <span className="text-bronze">{Math.max(1, Math.ceil(secondsLeft / 60))} хв</span>.
+            </p>
 
-        <Button
-          onClick={confirm}
-          disabled={isHolding || holdIsLive || !everyRunLongEnough}
-          className={cn(
-            "mt-8 w-full disabled:cursor-not-allowed disabled:opacity-50",
-            (dayIsFull || availability?.open === false) && "hidden",
-          )}
-        >
-          {isHolding ? (
-            <>
-              <Loader2 className="size-4 animate-spin" aria-hidden /> Бронюємо…
-            </>
-          ) : holdIsLive ? (
-            `Бронь активна ще ${Math.max(1, Math.ceil(secondsLeft / 60))} хв`
-          ) : everyRunLongEnough ? (
-            total !== null
-              ? `Забронювати · ${formatHryvnia(total)}`
-              : `Забронювати (${selectedSlots.length} год)`
-          ) : (
-            `Мінімум ${minimumHours} год`
-          )}
-        </Button>
+            <div className="mt-2 flex flex-col gap-3 sm:flex-row">
+              <ButtonLink href={phoneHref} className="flex-1 justify-center">
+                <Phone className="size-4" aria-hidden />
+                {phoneDisplay}
+              </ButtonLink>
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={release}
+                disabled={isReleasing}
+                className="flex-1 justify-center"
+              >
+                {isReleasing ? (
+                  <>
+                    <Loader2 className="size-4 animate-spin" aria-hidden /> Скасовуємо…
+                  </>
+                ) : (
+                  "Скасувати бронь"
+                )}
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <>
+          {/* The summary sits directly above the button, so the last thing
+              read before committing is what is being committed to. */}
+          {selectedSlots.length > 0 && !dayIsFull && availability?.open !== false ? (
+            <div className="border-bronze/20 mt-8 flex flex-col gap-2 border p-5">
+              <p className="text-[15px]">{chosenRoom?.name}</p>
+              <p className="text-muted-foreground text-[13px] leading-5">
+                {formatVenueDate(date.toISOString())} ·{" "}
+                {selectedSlots[0]?.label.split(" — ")[0]} —{" "}
+                {selectedSlots[selectedSlots.length - 1]?.label.split(" — ")[1]} ·{" "}
+                {selectedSlots.length} год
+              </p>
+              {total !== null ? (
+                <p className="border-bronze/15 mt-2 flex items-baseline justify-between border-t pt-3">
+                  <span className="label-caps text-muted-foreground">До сплати</span>
+                  <span className="text-bronze text-[18px]">{formatHryvnia(total)}</span>
+                </p>
+              ) : null}
+            </div>
+          ) : null}
+
+          <Button
+            onClick={confirm}
+            disabled={isHolding || holdIsLive || !everyRunLongEnough}
+            className={cn(
+              "mt-8 w-full disabled:cursor-not-allowed disabled:opacity-50",
+              (dayIsFull || availability?.open === false) && "hidden",
+            )}
+          >
+            {isHolding ? (
+              <>
+                <Loader2 className="size-4 animate-spin" aria-hidden /> Бронюємо…
+              </>
+            ) : holdIsLive ? (
+              `Бронь активна ще ${Math.max(1, Math.ceil(secondsLeft / 60))} хв`
+            ) : everyRunLongEnough ? (
+              total !== null
+                ? `Забронювати · ${formatHryvnia(total)}`
+                : `Забронювати (${selectedSlots.length} год)`
+            ) : (
+              `Мінімум ${minimumHours} год`
+            )}
+          </Button>
+          </>
+        )}
 
         {/* Under the booking button, where it is read at the moment it
             matters. Always shown, even on a full day: somebody choosing
