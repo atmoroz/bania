@@ -805,6 +805,13 @@ export type Database = {
     Functions: {
       delete_media: { Args: { ids: string[] }; Returns: number }
       expire_stale_holds: { Args: never; Returns: number }
+      hold_state: {
+        Args: { p_ids: string[] }
+        Returns: {
+          expires_at: string
+          state: string
+        }[]
+      }
       is_admin: { Args: never; Returns: boolean }
       media_usage: {
         Args: never

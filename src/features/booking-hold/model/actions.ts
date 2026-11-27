@@ -251,6 +251,35 @@ export async function placeHold(
   };
 }
 
+export type HoldState =
+  | { state: "live"; expiresAt: string }
+  | { state: "confirmed" }
+  | { state: "gone" };
+
+/**
+ * What became of a hold this browser made.
+ *
+ * The page used to trust its own localStorage and nothing else, so a
+ * hold the administrator had cancelled — or confirmed — went on
+ * counting down in the visitor's browser as though it still existed.
+ */
+export async function checkHold(bookingIds: string[]): Promise<HoldState> {
+  if (bookingIds.length === 0) return { state: "gone" };
+
+  const supabase = createPublicClient();
+  const { data, error } = await supabase.rpc("hold_state", { p_ids: bookingIds }).maybeSingle();
+
+  // A failed check must not throw away a hold that may well be live:
+  // the countdown expires on its own soon enough either way.
+  if (error || !data) return { state: "live", expiresAt: new Date().toISOString() };
+
+  if (data.state === "confirmed") return { state: "confirmed" };
+  if (data.state === "live" && data.expires_at) {
+    return { state: "live", expiresAt: data.expires_at };
+  }
+  return { state: "gone" };
+}
+
 /**
  * Lets go of a hold this browser made.
  *

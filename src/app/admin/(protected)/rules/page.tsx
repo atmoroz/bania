@@ -1,25 +1,26 @@
 import { Suspense } from "react";
 
 import { RulesEditor, getAdminRules } from "@/features/admin-rules";
-import { Container } from "@/shared/ui";
+import { AdminPageHeader, Container } from "@/shared/ui";
 
 export const metadata = { title: "Правила" };
 
 export default function Page() {
   return (
-    <Container className="py-14">
-      <p className="label-caps text-bronze">Адмінпанель</p>
-      <h1 className="font-display mt-3 text-[34px] leading-tight md:text-[44px]">Правила</h1>
-      <p className="text-muted-foreground mt-4 max-w-[640px] text-[15px] leading-6">
+    <>
+      <AdminPageHeader title="Правила">
         Два вікна під кнопкою бронювання: правила та «що входить». Секції
         показуються в тому порядку, в якому стоять тут; приховані лишаються в
         панелі, але на сайті їх немає.
-      </p>
+      </AdminPageHeader>
+
+      <Container className="pt-8 pb-16">
 
       <Suspense fallback={<p className="text-muted-foreground mt-10 text-[15px]">Завантаження…</p>}>
         <Rules />
       </Suspense>
-    </Container>
+      </Container>
+    </>
   );
 }
 

@@ -3,24 +3,24 @@ import { Suspense } from "react";
 
 import { AdminBookingCalendar } from "@/features/admin-bookings";
 import { createSupabaseServerClient } from "@/shared/api";
-import { Section, SectionHeading } from "@/shared/ui";
+import { AdminPageHeader, Container } from "@/shared/ui";
 
 export const metadata: Metadata = { title: "Бронювання", robots: { index: false } };
 
 export default function AdminBookingsPage() {
   return (
-    <Section>
-      <SectionHeading
-        eyebrow="Адмінпанель"
-        title="Бронювання"
-        lead="Сьогоднішній день відкрито одразу. Підтвердіть або скасуйте очікувані броні, або створіть нову для гостя, який зателефонував."
-      />
-      <div className="mt-12">
+    <>
+      <AdminPageHeader title="Бронювання">
+        Сьогоднішній день відкрито одразу. Підтвердіть або скасуйте очікувані броні,
+        або створіть нову для гостя, який зателефонував.
+      </AdminPageHeader>
+
+      <Container className="pt-8 pb-16">
         <Suspense fallback={<p className="text-muted-foreground text-[15px]">Завантаження…</p>}>
           <Loader />
         </Suspense>
-      </div>
-    </Section>
+      </Container>
+    </>
   );
 }
 

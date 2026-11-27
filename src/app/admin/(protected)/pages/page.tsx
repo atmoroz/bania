@@ -1,25 +1,26 @@
 import { Suspense } from "react";
 
 import { getAdminPages, PageEditor } from "@/features/admin-pages";
-import { Container } from "@/shared/ui";
+import { AdminPageHeader, Container } from "@/shared/ui";
 
 export const metadata = { title: "Сторінки" };
 
 export default function Page() {
   return (
-    <Container className="py-14">
-      <p className="label-caps text-bronze">Адмінпанель</p>
-      <h1 className="font-display mt-3 text-[34px] leading-tight md:text-[44px]">Сторінки</h1>
-      <p className="text-muted-foreground mt-4 max-w-[640px] text-[15px] leading-6">
+    <>
+      <AdminPageHeader title="Сторінки">
         Кожна сторінка складається з блоків. Відкрийте блок, щоб змінити тексти, приховайте
         той, що зараз не потрібен, або змініть їхній порядок. Зміни не потрапляють на сайт,
         доки ви не натиснете «Зберегти» — спершу їх можна подивитися кнопкою «Переглянути».
-      </p>
+      </AdminPageHeader>
+
+      <Container className="pt-8 pb-16">
 
       <Suspense fallback={<p className="text-muted-foreground mt-10 text-[15px]">Завантаження…</p>}>
         <Editor />
       </Suspense>
-    </Container>
+      </Container>
+    </>
   );
 }
 

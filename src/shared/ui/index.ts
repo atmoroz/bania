@@ -1,3 +1,4 @@
+export { AdminPageHeader } from "./admin-page-header";
 export { Button, ButtonLink } from "./button";
 export { Calendar } from "./calendar";
 export { Card } from "./card";

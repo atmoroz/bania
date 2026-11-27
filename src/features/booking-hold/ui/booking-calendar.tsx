@@ -38,6 +38,7 @@ import {
 import {
   getDayAvailability,
   getRangeAvailability,
+  checkHold,
   placeHold,
   releaseHold,
   type DayAvailability,
@@ -85,6 +86,8 @@ const stateStyles: Record<Slot["state"], string> = {
 type MyHold = {
   ids: string[];
   expiresAt: string;
+  /** Set once the administrator has taken the call and confirmed it. */
+  confirmed?: boolean;
   roomSlug: string;
   roomName: string;
   dateLabel: string;
@@ -286,12 +289,45 @@ export function BookingCalendar({
   // stored hold is dropped, which is also what the database has done by
   // then, and the store notifies everything that reads it.
   useEffect(() => {
-    if (!mine) return;
+    if (!mine || mine.confirmed) return;
     const id = setInterval(() => {
       setNowMs(Date.now());
       if (Date.parse(mine.expiresAt) <= Date.now()) clearMyHold();
     }, 1000);
     return () => clearInterval(id);
+  }, [mine]);
+
+  // And the database has the last word on whether the hold still
+  // exists. Without this the page believed its own localStorage: an
+  // administrator who cancelled a hold left the guest watching a
+  // countdown for something that was already gone, and one who
+  // confirmed it left them being told to telephone.
+  useEffect(() => {
+    if (!mine || mine.confirmed) return;
+
+    let stopped = false;
+    const verify = async () => {
+      const result = await checkHold(mine.ids);
+      if (stopped) return;
+      if (result.state === "gone") {
+        clearMyHold();
+        setHeld(null);
+        refresh();
+      } else if (result.state === "confirmed") {
+        writeMyHold({ ...mine, confirmed: true });
+        setHeld(null);
+        refresh();
+      }
+    };
+
+    void verify();
+    const id = setInterval(() => void verify(), 20_000);
+    return () => {
+      stopped = true;
+      clearInterval(id);
+    };
+    // `refresh` is stable for the life of the day it belongs to.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mine]);
 
   const slots = useMemo(
@@ -572,7 +608,26 @@ export function BookingCalendar({
             booking, and the two things to do about it. It replaces the
             confirm button, because with a hold running there is nothing
             to confirm until this one is settled. */}
-        {mine && holdIsLive ? (
+        {mine?.confirmed ? (
+          <div className="border-sage/40 bg-sage-deep/20 mt-8 flex flex-col gap-3 border p-5">
+            <p className="label-caps text-sage">Бронь підтверджено</p>
+            <p className="text-[15px]">{mine.roomName}</p>
+            <p className="text-muted-foreground text-[13px] leading-5">
+              {mine.dateLabel} · {mine.from} — {mine.to} · {mine.hours} год
+            </p>
+            <p className="text-muted-foreground text-[13px] leading-5">
+              Адміністратор підтвердив цей час. Чекаємо на вас.
+            </p>
+            <Button
+              type="button"
+              variant="ghost"
+              className="mt-2 self-start"
+              onClick={() => clearMyHold()}
+            >
+              Зрозуміло
+            </Button>
+          </div>
+        ) : mine && holdIsLive ? (
           <div className="border-bronze/30 mt-8 flex flex-col gap-3 border p-5">
             <p className="label-caps text-bronze">Ваша бронь</p>
             <p className="text-[15px]">{mine.roomName}</p>
