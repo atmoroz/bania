@@ -142,7 +142,7 @@ export function InstallApp({ className }: { className?: string }) {
             <>
               <p className="mt-7 text-[15px] leading-6">
                 Натисніть кнопку — браузер запитає підтвердження, і застосунок
-                з&apos;явиться на екрані.
+                з’явиться на екрані.
               </p>
               <Button type="button" className="mt-7 w-full" onClick={install}>
                 <ArrowDownToLine className="size-4" aria-hidden />
@@ -184,7 +184,7 @@ function Steps({ platform }: { platform: Platform }) {
           },
           {
             icon: <ArrowDownToLine className="size-4" aria-hidden />,
-            text: <>Натисніть «Додати» — іконка з&apos;явиться на екрані.</>,
+            text: <>Натисніть «Додати» — іконка з’явиться на екрані.</>,
           },
         ]
       : [
@@ -203,7 +203,7 @@ function Steps({ platform }: { platform: Platform }) {
           },
           {
             icon: <ArrowDownToLine className="size-4" aria-hidden />,
-            text: <>Підтвердіть — іконка з&apos;явиться поряд з іншими застосунками.</>,
+            text: <>Підтвердіть — іконка з’явиться поряд з іншими застосунками.</>,
           },
         ];
 

@@ -3,7 +3,7 @@ import { Phone, WifiOff } from "lucide-react";
 import { getSettings } from "@/entities/settings";
 import { ButtonLink, Container } from "@/shared/ui";
 
-export const metadata = { title: "Немає зв'язку" };
+export const metadata = { title: "Немає зв’язку" };
 
 /**
  * Shown by the service worker when a page is asked for and there is no
@@ -25,11 +25,11 @@ export default async function OfflinePage() {
       <WifiOff className="text-bronze size-8" aria-hidden />
       <p className="label-caps text-bronze mt-7">{settings.site_title}</p>
       <h1 className="font-display mt-4 text-[32px] leading-tight md:text-[44px]">
-        Немає зв&apos;язку
+        Немає зв’язку
       </h1>
       <p className="text-muted-foreground mt-5 max-w-md text-[15px] leading-6">
         Сторінка не завантажилась — телефон поза мережею. Вільні години ми показуємо
-        тільки наживо, тому зачекайте на зв&apos;язок або зателефонуйте: адміністратор
+        тільки наживо, тому зачекайте на зв’язок або зателефонуйте: адміністратор
         підкаже час і забронює.
       </p>
 

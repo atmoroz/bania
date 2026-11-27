@@ -272,7 +272,7 @@ export function AdminBookingCalendar({ rooms }: { rooms: AdminRoom[] }) {
           <form action={onSubmit} className="mt-7 flex flex-col gap-5">
             <label className="flex flex-col gap-2">
               <span className="label-caps text-muted-foreground">
-                Ім&apos;я гостя <span className="normal-case">(необов&apos;язково)</span>
+                Ім’я гостя <span className="normal-case">(необов’язково)</span>
               </span>
               <input
                 name="name"
@@ -282,7 +282,7 @@ export function AdminBookingCalendar({ rooms }: { rooms: AdminRoom[] }) {
             </label>
             <label className="flex flex-col gap-2">
               <span className="label-caps text-muted-foreground">
-                Телефон <span className="normal-case">(необов&apos;язково)</span>
+                Телефон <span className="normal-case">(необов’язково)</span>
               </span>
               <input
                 name="phone"

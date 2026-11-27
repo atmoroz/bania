@@ -138,6 +138,7 @@ export function RoomsEditor({
         highlights: c.highlights.filter(Boolean),
         ctaLabel: c.ctaLabel || null,
         isFeatured: c.isFeatured,
+        acceptsBookings: c.acceptsBookings,
         image: c.photos.find((p) => p.mediaId === c.coverMediaId)
           ? { src: c.photos.find((p) => p.mediaId === c.coverMediaId)!.url, alt: "" }
           : null,

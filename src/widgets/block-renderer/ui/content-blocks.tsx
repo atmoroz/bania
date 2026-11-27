@@ -33,7 +33,7 @@ export async function LocationsBlock({
             <LocationCard
               location={location}
               showPrice={content.showPrices}
-              showBooking={content.showBooking}
+              showBooking={content.showBooking && location.acceptsBookings}
             />
           </Reveal>
         ))}
@@ -258,13 +258,18 @@ export async function ContactsBlock({ content }: { content: BlockContent["contac
 export async function BookingCtaBlock({ content }: { content: BlockContent["booking_cta"] }) {
   const [settings, locations] = await Promise.all([getSettings(), getLocations()]);
 
-  // Only cards that actually take bookings. A card can be visible and still be
-  // closed for the season, and offering it here would waste a visitor's time.
-  const bookable = locations.map((l) => ({
-    slug: l.slug,
-    name: l.name,
-    pricePerHour: l.pricePerHour,
-  }));
+  // Only cards that actually take bookings. A card can be visible and still
+  // be closed for the season; the filter the comment promised was missing,
+  // so such a card appeared in step 1 and then answered "зачинено" for
+  // every day of the year.
+  const bookable = locations
+    .filter((l) => l.acceptsBookings)
+    .map((l) => ({
+      slug: l.slug,
+      name: l.name,
+      pricePerHour: l.pricePerHour,
+      minimumMinutes: l.minimumMinutes,
+    }));
 
   return (
     <Section>

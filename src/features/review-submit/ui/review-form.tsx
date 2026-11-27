@@ -78,7 +78,7 @@ export function ReviewForm() {
         </p>
         <p className="font-display mt-4 text-[22px]">Дякуємо за відгук</p>
         <p className="text-muted-foreground mt-2 text-[15px] leading-6">
-          Він з&apos;явиться на сайті після перевірки адміністратором.
+          Він з’явиться на сайті після перевірки адміністратором.
         </p>
       </div>
     );
@@ -134,7 +134,7 @@ export function ReviewForm() {
 
       <label className="flex flex-col gap-2">
         <span className="label-caps text-muted-foreground">
-          Відгук <span className="normal-case">(необов&apos;язково)</span>
+          Відгук <span className="normal-case">(необов’язково)</span>
         </span>
         <textarea
           ref={bodyRef}
@@ -165,7 +165,7 @@ export function ReviewForm() {
 
       <label className="flex flex-col gap-2">
         <span className="label-caps text-muted-foreground">
-          Ім&apos;я <span className="normal-case">(необов&apos;язково)</span>
+          Ім’я <span className="normal-case">(необов’язково)</span>
         </span>
         <input
           name="author"

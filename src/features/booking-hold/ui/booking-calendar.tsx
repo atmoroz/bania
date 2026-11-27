@@ -218,6 +218,14 @@ export function BookingCalendar({
     [slots],
   );
 
+  // What is being bought, in words and in money. A visitor was one click
+  // from a ~2 200 ₴ commitment with the figure printed nowhere on the
+  // page; this is the only place it can honestly appear, because until
+  // the hours are chosen there is no total.
+  const chosenRoom = rooms.find((r) => r.slug === roomSlug);
+  const total =
+    chosenRoom?.pricePerHour != null ? chosenRoom.pricePerHour * selectedSlots.length : null;
+
   const everyRunLongEnough = useMemo(() => {
     if (selectedSlots.length === 0) return false;
 
@@ -354,7 +362,13 @@ export function BookingCalendar({
           instead of one trailing below the other. */}
       <div ref={rightColumnRef} className="flex min-h-0 flex-col">
         <p className="label-caps text-bronze">
-          3. Оберіть сеанси <span className="text-muted-foreground">(по годині, мінімум 2 поспіль)</span>
+          3. Оберіть сеанси{" "}
+          {/* The figure comes from the card, not from the sentence: the
+              chan asks for three hours and this line used to say two,
+              contradicting the button a few rows below it. */}
+          <span className="text-muted-foreground">
+            (по годині, мінімум {minimumHours} поспіль)
+          </span>
         </p>
         <p className="text-muted-foreground mt-2 text-[13px]">{formatVenueDate(date.toISOString())}</p>
 
@@ -431,6 +445,26 @@ export function BookingCalendar({
             selection exists. Hidden on a day with nothing left: a disabled
             "minimum two hours" under "this day is full" answers a question
             nobody is asking. */}
+        {/* The summary sits directly above the button, so the last thing
+            read before committing is what is being committed to. */}
+        {selectedSlots.length > 0 && !dayIsFull && availability?.open !== false ? (
+          <div className="border-bronze/20 mt-8 flex flex-col gap-2 border p-5">
+            <p className="text-[15px]">{chosenRoom?.name}</p>
+            <p className="text-muted-foreground text-[13px] leading-5">
+              {formatVenueDate(date.toISOString())} ·{" "}
+              {selectedSlots[0]?.label.split(" — ")[0]} —{" "}
+              {selectedSlots[selectedSlots.length - 1]?.label.split(" — ")[1]} ·{" "}
+              {selectedSlots.length} год
+            </p>
+            {total !== null ? (
+              <p className="border-bronze/15 mt-2 flex items-baseline justify-between border-t pt-3">
+                <span className="label-caps text-muted-foreground">До сплати</span>
+                <span className="text-bronze text-[18px]">{formatHryvnia(total)}</span>
+              </p>
+            ) : null}
+          </div>
+        ) : null}
+
         <Button
           onClick={confirm}
           disabled={isHolding || holdIsLive || !everyRunLongEnough}
@@ -444,9 +478,11 @@ export function BookingCalendar({
               <Loader2 className="size-4 animate-spin" aria-hidden /> Бронюємо…
             </>
           ) : holdIsLive ? (
-            `Бронь активна ще ${Math.floor(secondsLeft / 60)}:${String(secondsLeft % 60).padStart(2, "0")}`
+            `Бронь активна ще ${Math.max(1, Math.ceil(secondsLeft / 60))} хв`
           ) : everyRunLongEnough ? (
-            `Підтвердити (${selectedSlots.length} год)`
+            total !== null
+              ? `Забронювати · ${formatHryvnia(total)}`
+              : `Забронювати (${selectedSlots.length} год)`
           ) : (
             `Мінімум ${minimumHours} год`
           )}
@@ -482,13 +518,17 @@ export function BookingCalendar({
             ))}
           </ul>
 
-          <p className="mt-7 text-[15px] leading-6">
-            Для завершення бронювання зв&apos;яжіться з адміністратором.
+          {/* The room, which the guest has to name on the telephone and
+              which this dialog used to leave out. */}
+          <p className="text-bronze mt-6 text-[15px]">{chosenRoom?.name}</p>
+
+          <p className="mt-5 text-[15px] leading-6">
+            Для завершення бронювання зв’яжіться з адміністратором.
           </p>
           <p className="text-muted-foreground mt-2 text-[15px] leading-6">
-            Бронь без підтвердження буде активна протягом{" "}
+            Бронь без підтвердження буде активна ще{" "}
             <span className="text-bronze font-medium">
-              {Math.floor(secondsLeft / 60)}:{String(secondsLeft % 60).padStart(2, "0")}
+              {Math.max(1, Math.ceil(secondsLeft / 60))} хв
             </span>
             .
           </p>

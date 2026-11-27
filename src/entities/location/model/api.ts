@@ -21,7 +21,7 @@ export async function getLocations(): Promise<Location[]> {
     .from("rooms")
     .select(
       `slug, name, eyebrow, short_description, description, capacity,
-       price_per_hour, highlights, cta_label, is_featured, sort_order,
+       price_per_hour, highlights, cta_label, is_featured, accepts_bookings, sort_order,
        cover:media!rooms_cover_media_id_fkey(storage_path, alt),
        components:room_components!room_components_room_id_fkey(
          component:rooms!room_components_component_id_fkey(slug, name)
@@ -53,6 +53,7 @@ export async function getLocations(): Promise<Location[]> {
     highlights: r.highlights,
     ctaLabel: r.cta_label,
     isFeatured: r.is_featured,
+    acceptsBookings: r.accepts_bookings,
     image: r.cover
       ? { src: mediaUrl(r.cover.storage_path), alt: r.cover.alt }
       : null,

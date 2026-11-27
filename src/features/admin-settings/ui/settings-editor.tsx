@@ -29,7 +29,7 @@ const WEEK = [
   { weekday: 2, label: "Вівторок" },
   { weekday: 3, label: "Середа" },
   { weekday: 4, label: "Четвер" },
-  { weekday: 5, label: "П'ятниця" },
+  { weekday: 5, label: "П’ятниця" },
   { weekday: 6, label: "Субота" },
   { weekday: 0, label: "Неділя" },
 ];

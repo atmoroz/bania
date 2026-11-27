@@ -24,7 +24,7 @@ export async function submitReview(
     return { ok: false, message: "Відгук задовгий — до 4000 символів." };
   }
   if (author.trim().length > 120) {
-    return { ok: false, message: "Ім'я задовге — до 120 символів." };
+    return { ok: false, message: "Ім’я задовге — до 120 символів." };
   }
 
   const supabase = await createSupabaseServerClient();

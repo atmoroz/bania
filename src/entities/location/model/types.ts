@@ -29,6 +29,12 @@ export type Location = {
   highlights: string[];
   ctaLabel: string | null;
   isFeatured: boolean;
+  /**
+   * Whether this card takes bookings at all. A card can be visible and
+   * closed for the season; the calendar offered those anyway, and every
+   * day of them came back "зачинено".
+   */
+  acceptsBookings: boolean;
   image: { src: string; alt: string } | null;
   /** Names of the cards this one is made of; empty when it stands alone. */
   partOf: string[];

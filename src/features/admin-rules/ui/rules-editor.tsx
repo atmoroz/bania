@@ -248,7 +248,7 @@ function SectionEditor({
           />
           <TextField
             label="Вступ"
-            hint="Необов'язковий абзац під назвою."
+            hint="Необов’язковий абзац під назвою."
             rows={2}
             value={section.intro}
             onChange={(v) => onChange({ intro: v })}

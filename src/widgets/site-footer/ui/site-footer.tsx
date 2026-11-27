@@ -1,23 +1,48 @@
 import Link from "next/link";
 import { Check, Clock, Mail, MapPin, Phone } from "lucide-react";
 
+import { getLocations } from "@/entities/location";
 import { getNavigation } from "@/entities/page-block";
 import { getSettings, getSocialLinks, SocialBadge, socialLabel } from "@/entities/settings";
 import { Container, LogoMark } from "@/shared/ui";
 
 const etiquette = [
-  "Оренда банного простору від 2 годин",
   "Власна купіль та крижаний басейн",
-  "Трав'яні збори та дубові віники",
+  "Трав’яні збори та дубові віники",
 ];
+
+/**
+ * The minimum, said once and taken from the cards.
+ *
+ * It used to be the fixed line "Оренда банного простору від 2 годин" in
+ * the footer of all six pages, which stopped being true the day the chan
+ * and the set asked for three.
+ */
+function minimumLine(locations: { acceptsBookings: boolean; minimumMinutes: number }[]): string {
+  const hours = [
+    ...new Set(
+      locations.filter((l) => l.acceptsBookings).map((l) => Math.round(l.minimumMinutes / 60)),
+    ),
+  ].sort((a, b) => a - b);
+
+  const low = hours[0];
+  const high = hours[hours.length - 1];
+  if (low === undefined || high === undefined) return "Бронювання від 2 годин";
+  return low === high
+    ? `Бронювання від ${low} годин`
+    : `Бронювання від ${low} годин, чан і сет — від ${high}`;
+}
 
 /** `bare` drops the section links, for the preview: see SiteHeaderClient. */
 export async function SiteFooter({ bare = false }: { bare?: boolean } = {}) {
-  const [settings, navigation, social] = await Promise.all([
+  const [settings, navigation, social, locations] = await Promise.all([
     getSettings(),
     getNavigation(),
     getSocialLinks(),
+    getLocations(),
   ]);
+
+  const lines = [minimumLine(locations), ...etiquette];
 
   return (
     <footer className="border-bronze/15 bg-surface-lowest mt-auto border-t">
@@ -74,7 +99,7 @@ export async function SiteFooter({ bare = false }: { bare?: boolean } = {}) {
             </li>
           </ul>
 
-          <p className="label-caps text-bronze mt-8">Прямий зв&apos;язок</p>
+          <p className="label-caps text-bronze mt-8">Прямий зв’язок</p>
           <ul className="mt-5 flex flex-col gap-4 text-[15px]">
             <li className="flex gap-3">
               <Phone className="text-sage mt-0.5 size-4 shrink-0" aria-hidden />
@@ -102,7 +127,7 @@ export async function SiteFooter({ bare = false }: { bare?: boolean } = {}) {
         <div>
           <p className="label-caps text-bronze">Гостьовий етикет</p>
           <ul className="mt-5 flex flex-col gap-4 text-[15px] leading-6">
-            {etiquette.map((line) => (
+            {lines.map((line) => (
               <li key={line} className="flex gap-3">
                 <Check className="text-sage mt-1 size-4 shrink-0" aria-hidden />
                 <span>{line}</span>

@@ -223,13 +223,21 @@ export async function placeHold(
     // slot between the page loading and the button being pressed.
     const taken = error.message.includes("booking_rooms_no_overlap");
     const tooShort = error.message.includes("must be at least");
+    // The database says how many minutes it wanted; repeating a figure
+    // here is how the chan ended up being told the limit was two hours.
+    const wanted = Number(error.message.match(/at least (\d+) minutes/)?.[1] ?? 0);
+    const closed = error.message.includes("the venue is closed");
+    const outside = error.message.includes("must fall inside");
+    const offGrid = error.message.includes("minute grid");
     return {
       ok: false,
       message: taken
         ? "Цей час щойно зайняли. Оновіть сторінку та оберіть інший."
         : tooShort
-          ? "Кожен відрізок має бути щонайменше 2 години поспіль."
-          : "Не вдалося створити бронь. Спробуйте ще раз або зателефонуйте адміністратору.",
+          ? `Кожен відрізок має бути щонайменше ${wanted ? Math.round(wanted / 60) : 2} год поспіль.`
+          : closed || outside || offGrid
+            ? "Цей час уже поза графіком роботи. Оновіть сторінку та оберіть інший."
+            : "Не вдалося створити бронь. Спробуйте ще раз або зателефонуйте адміністратору.",
     };
   }
 

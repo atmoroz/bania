@@ -20,6 +20,7 @@ export const stagedCard = z.object({
   highlights: z.array(z.string()).default([]),
   ctaLabel: z.string().nullable().default(null),
   isFeatured: z.boolean().default(false),
+  acceptsBookings: z.boolean().default(true),
   image: z.object({ src: z.string(), alt: z.string() }).nullable().default(null),
   partOf: z.array(z.string()).default([]),
   photos: z
