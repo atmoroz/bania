@@ -23,10 +23,11 @@ export function LocationCard({
       // still ones reads as a fault rather than a highlight. They are
       // knocked out of step by a per-card delay in globals.css.
       ember="always"
-      className={cn(
-        "lift flex h-full flex-col",
-        location.isFeatured && "border-bronze",
-      )}
+      // No solid bronze frame on the featured card any more: beside the
+      // travelling ember it read as a second, heavier border rather than
+      // a highlight. Every card wears the same hairline; what is
+      // featured is said by the content, and by its place in the order.
+      className="lift flex h-full flex-col"
     >
       {/* The card's own photographs when it has more than one — they were
           loaded and shown nowhere until now — and the cover alone otherwise. */}
