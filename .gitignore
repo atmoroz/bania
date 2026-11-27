@@ -58,3 +58,6 @@ env.*.local
 # claude code local-only settings (may hold machine-specific config)
 .claude/settings.local.json
 .project-documentation/
+# Built by `serwist build` after next build; see serwist.config.mjs.
+public/sw.js
+public/sw.js.map

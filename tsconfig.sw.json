@@ -1,0 +1,9 @@
+{
+  "//": "The service worker runs in a worker, not in a page: it needs the webworker lib, and the DOM lib the app is built with would collide with it. Checked separately by `npm run typecheck`.",
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "lib": ["esnext", "webworker"],
+    "types": []
+  },
+  "include": ["src/sw.ts"]
+}

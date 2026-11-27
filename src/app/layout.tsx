@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Manrope, Playfair_Display } from "next/font/google";
 
 import { getSettings } from "@/entities/settings";
@@ -21,6 +21,13 @@ const manrope = Manrope({
   display: "swap",
 });
 
+// The installed app's window: the browser's own chrome is gone, so the
+// system bar takes this colour and the site's background continues into it.
+export const viewport: Viewport = {
+  themeColor: "#12100e",
+  colorScheme: "dark",
+};
+
 export async function generateMetadata(): Promise<Metadata> {
   const settings = await getSettings();
   const title = `${settings.site_title} — Банний комплекс & Чан`;
@@ -32,6 +39,11 @@ export async function generateMetadata(): Promise<Metadata> {
     metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3210"),
     title: { default: title, template: `%s — ${settings.site_title}` },
     description,
+    appleWebApp: {
+      capable: true,
+      title: settings.site_title,
+      statusBarStyle: "black-translucent",
+    },
     openGraph: {
       type: "website",
       locale: "uk_UA",

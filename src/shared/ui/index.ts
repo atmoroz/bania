@@ -16,3 +16,4 @@ export { Eyebrow, Section, SectionHeading } from "./section";
 export { SaveBar } from "./save-bar";
 export { ScrollFade } from "./scroll-fade";
 export { Skeleton, SlotListSkeleton } from "./skeleton";
+export { ServiceWorker } from "./service-worker";

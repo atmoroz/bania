@@ -19,6 +19,9 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Built by `serwist build`; bundled and minified, not ours to lint.
+    "public/sw.js",
+    "public/sw.js.map",
   ]),
 ]);
 
