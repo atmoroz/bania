@@ -18,11 +18,13 @@ export function LocationCard({
 }) {
   return (
     <Card
-      // The featured card keeps the ember turning; the rest wake under the
-      // pointer. A grid where every frame moves at once is a fairground.
-      ember={location.isFeatured ? "always" : "hover"}
+      // Every card in the catalogue keeps its ember turning: the owner
+      // asked for the frames to be alive, and one moving card beside two
+      // still ones reads as a fault rather than a highlight. They are
+      // knocked out of step by a per-card delay in globals.css.
+      ember="always"
       className={cn(
-        "flex h-full flex-col",
+        "lift flex h-full flex-col",
         location.isFeatured && "border-bronze",
       )}
     >

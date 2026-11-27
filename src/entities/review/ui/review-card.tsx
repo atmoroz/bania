@@ -5,7 +5,7 @@ import { RatingStars } from "./rating-stars";
 
 export function ReviewCard({ review }: { review: WrittenReview }) {
   return (
-    <Card ember="hover" className="flex h-full flex-col gap-5 p-7">
+    <Card ember="hover" className="lift flex h-full flex-col gap-5 p-7">
       <RatingStars value={review.rating} />
       <blockquote className="text-[15px] leading-6 md:text-[18px] md:leading-7">
         «{review.body}»

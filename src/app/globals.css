@@ -484,22 +484,35 @@
 .ember,
 .ember-hover {
   position: relative;
+  /* Its own stacking context, so the ring can be lifted above the card's
+     contents. Without this the arc was painted under every photograph:
+     the slider's own positioned layers sit above a plain pseudo-element,
+     and on a card that is mostly picture the effect was invisible —
+     which is exactly how it was reported. */
+  isolation: isolate;
 }
 
+/* Two layers of the same arc: ::after is the line itself, ::before the
+   same thing blurred, which is what makes it read as a coal rather than
+   a hairline somebody forgot to delete. The first version was one
+   unblurred pixel at half strength and was, fairly, not noticed at all. */
+.ember::before,
 .ember::after,
+.ember-hover::before,
 .ember-hover::after {
   content: "";
   position: absolute;
-  inset: -1px;
-  padding: 1px;
+  inset: -2px;
+  padding: 2px;
   pointer-events: none;
   background: conic-gradient(
     from var(--ember-angle),
     transparent 0deg,
-    transparent 268deg,
-    color-mix(in oklab, var(--bronze) 55%, transparent) 300deg,
-    var(--bronze) 330deg,
-    color-mix(in oklab, var(--bronze) 55%, transparent) 352deg,
+    transparent 205deg,
+    color-mix(in oklab, var(--bronze) 35%, transparent) 250deg,
+    var(--bronze) 295deg,
+    #fff3e0 325deg,
+    var(--bronze) 345deg,
     transparent 360deg
   );
   /* Longhands, not the `mask` shorthand: Chrome aliases `mask` and
@@ -510,10 +523,21 @@
   mask-clip: content-box, border-box;
   mask-composite: exclude;
   opacity: 0;
+  z-index: 3;
   transition: opacity 0.45s ease;
 }
 
+.ember::before,
+.ember-hover::before {
+  inset: -6px;
+  padding: 6px;
+  z-index: 2;
+  filter: blur(9px);
+}
+
+.ember-hover:hover::before,
 .ember-hover:hover::after,
+.ember-hover:focus-within::before,
 .ember-hover:focus-within::after {
   opacity: 1;
 }
@@ -525,13 +549,52 @@
     }
   }
 
+  .ember::before,
   .ember::after {
     opacity: 1;
-    animation: ember-travel 7s linear infinite;
+    animation: ember-travel 4.5s linear infinite;
   }
 
+  .ember::before {
+    opacity: 0.9;
+  }
+
+  .ember-hover::before,
   .ember-hover::after {
-    animation: ember-travel 4.5s linear infinite;
+    animation: ember-travel 3.2s linear infinite;
+  }
+
+  /* Out of step with each other, and written after the animations rather
+     than before: the `animation` shorthand resets the delay, so these
+     rules did nothing where they first stood and every card's ember
+     reached the same corner at the same moment. */
+  .ember:nth-child(2n)::before,
+  .ember:nth-child(2n)::after,
+  *:nth-child(2n) > .ember::before,
+  *:nth-child(2n) > .ember::after {
+    animation-delay: -1.5s;
+  }
+
+  .ember:nth-child(3n)::before,
+  .ember:nth-child(3n)::after,
+  *:nth-child(3n) > .ember::before,
+  *:nth-child(3n) > .ember::after {
+    animation-delay: -3s;
+  }
+}
+
+/* A card that answers the pointer: a small lift and a warmer edge. Cheap
+   next to the ember, and it is what makes a grid feel touchable. */
+.lift {
+  transition:
+    transform 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 0.35s ease;
+}
+
+@media (hover: hover) {
+  .lift:hover {
+    transform: translateY(-4px);
+    border-color: color-mix(in oklab, var(--bronze) 45%, transparent);
   }
 }
 
@@ -546,15 +609,15 @@
 
 [data-js="1"] .reveal {
   opacity: 0;
-  transform: translateY(14px);
+  transform: translateY(26px);
 }
 
 [data-js="1"] .reveal[data-shown="true"] {
   opacity: 1;
   transform: none;
   transition:
-    opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1),
-    transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+    opacity 0.65s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.65s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 @media (prefers-reduced-motion: reduce) {

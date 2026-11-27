@@ -10,7 +10,7 @@ import { getReviews, ReviewCard, summarise, writtenOnly } from "@/entities/revie
 import { ReviewForm } from "@/features/review-submit";
 import { getSettings } from "@/entities/settings";
 import { BookingCalendar } from "@/features/booking-hold";
-import { ButtonLink, Card, Section } from "@/shared/ui";
+import { ButtonLink, Card, Reveal, Section } from "@/shared/ui";
 
 import { BlockHeading } from "./block-heading";
 
@@ -27,13 +27,15 @@ export async function LocationsBlock({
     <Section>
       <BlockHeading content={content} />
       <div className="mt-14 grid gap-8 md:grid-cols-2 lg:grid-cols-3">
-        {locations.map((location) => (
-          <LocationCard
-            key={location.slug}
-            location={location}
-            showPrice={content.showPrices}
-            showBooking={content.showBooking}
-          />
+        {locations.map((location, i) => (
+          // Staggered, so the row arrives as a row rather than a flash.
+          <Reveal key={location.slug} delay={i * 0.08}>
+            <LocationCard
+              location={location}
+              showPrice={content.showPrices}
+              showBooking={content.showBooking}
+            />
+          </Reveal>
         ))}
       </div>
     </Section>
@@ -46,8 +48,10 @@ export async function AddonsBlock({ content }: { content: BlockContent["addons"]
     <Section className="bg-surface-low">
       <BlockHeading content={content} />
       <ul className="mt-10 flex flex-col">
-        {addons.map((addon) => (
-          <AddonRow key={addon.slug} addon={addon} />
+        {addons.map((addon, i) => (
+          <Reveal key={addon.slug} as="li" delay={Math.min(i, 8) * 0.05}>
+            <AddonRow addon={addon} />
+          </Reveal>
         ))}
       </ul>
     </Section>
@@ -66,8 +70,10 @@ export async function GalleryBlock({
     <Section>
       <BlockHeading content={content} />
       <div className="mt-14 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {photos.map((photo) => (
-          <PhotoTile key={photo.id} photo={photo} />
+        {photos.map((photo, i) => (
+          <Reveal key={photo.id} delay={Math.min(i, 6) * 0.07}>
+            <PhotoTile photo={photo} />
+          </Reveal>
         ))}
       </div>
     </Section>
@@ -125,13 +131,14 @@ export async function ReviewsBlock({ content }: { content: BlockContent["reviews
               : "mt-14 grid gap-8 md:grid-cols-2"
           }
         >
-          {written.map((review) => (
-            <div
+          {written.map((review, i) => (
+            <Reveal
               key={review.id}
+              delay={Math.min(i, 5) * 0.08}
               className={isSlider ? "w-[85%] shrink-0 snap-start md:w-[48%]" : undefined}
             >
               <ReviewCard review={review} />
-            </div>
+            </Reveal>
           ))}
         </div>
       ) : null}
