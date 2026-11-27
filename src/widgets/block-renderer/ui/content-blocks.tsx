@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import { Clock, Mail, MapPin, Navigation, Phone, Star } from "lucide-react";
 
-import { AddonRow, getAddons } from "@/entities/addon";
+import { AddonRow, getAddons, type Addon } from "@/entities/addon";
 import { getLocations, LocationCard, type Location } from "@/entities/location";
 import type { BlockContent } from "@/entities/page-block";
 import { getPhotos, PhotoTile, type Photo } from "@/entities/photo";
@@ -47,15 +47,37 @@ export async function AddonsBlock({ content }: { content: BlockContent["addons"]
   return (
     <Section className="bg-surface-low">
       <BlockHeading content={content} />
-      <ul className="mt-10 flex flex-col">
-        {addons.map((addon, i) => (
-          <Reveal key={addon.slug} as="li" delay={Math.min(i, 8) * 0.05}>
-            <AddonRow addon={addon} />
-          </Reveal>
+      {/* Grouped under the owner's own headings, in the order the first
+          item of each group appears. Twenty-two lines in one column is a
+          receipt; five short lists is a menu. */}
+      <div className="mt-10 flex flex-col gap-12">
+        {groupByCategory(addons).map(([category, items]) => (
+          <section key={category ?? "other"}>
+            {category ? <p className="label-caps text-bronze">{category}</p> : null}
+            <ul className={category ? "mt-5 flex flex-col" : "flex flex-col"}>
+              {items.map((addon, i) => (
+                <Reveal key={addon.slug} as="li" delay={Math.min(i, 6) * 0.05}>
+                  <AddonRow addon={addon} />
+                </Reveal>
+              ))}
+            </ul>
+          </section>
         ))}
-      </ul>
+      </div>
     </Section>
   );
+}
+
+/** Keeps the rows in their saved order and the groups in order of first appearance. */
+function groupByCategory(addons: Addon[]): [string | null, Addon[]][] {
+  const groups = new Map<string | null, Addon[]>();
+  for (const addon of addons) {
+    const key = addon.category?.trim() || null;
+    const list = groups.get(key);
+    if (list) list.push(addon);
+    else groups.set(key, [addon]);
+  }
+  return [...groups];
 }
 
 export async function GalleryBlock({

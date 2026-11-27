@@ -7,4 +7,6 @@ export type Addon = {
   price: number;
   /** Rendered after the price, e.g. "/ шт". Empty for a flat service. */
   unit: string;
+  /** The owner's own heading this belongs under, e.g. "Віники". */
+  category: string | null;
 };

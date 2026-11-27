@@ -12,7 +12,7 @@ export async function getAddons(): Promise<Addon[]> {
   const supabase = createPublicClient();
   const { data, error } = await supabase
     .from("addons")
-    .select("slug, name, description, price, unit")
+    .select("slug, name, description, price, unit, category")
     .eq("is_visible", true)
     .order("sort_order");
 
