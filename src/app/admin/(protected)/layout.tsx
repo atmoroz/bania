@@ -9,6 +9,7 @@ import {
   Loader2,
   LogOut,
   MapPin,
+  ScrollText,
   Settings,
   Star,
 } from "lucide-react";
@@ -23,6 +24,7 @@ const tabs = [
   { href: "/admin/locations", label: "Локації", icon: MapPin },
   { href: "/admin/gallery", label: "Галерея", icon: LayoutGrid },
   { href: "/admin/reviews", label: "Відгуки", icon: Star },
+  { href: "/admin/rules", label: "Правила", icon: ScrollText },
   // The library is where you go to add a file, not to run the place: it
   // sits with the settings rather than among the pages people read.
   { href: "/admin/media", label: "Медіа", icon: Images },

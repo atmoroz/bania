@@ -5,6 +5,7 @@ import { AddonRow, getAddons } from "@/entities/addon";
 import { getLocations, LocationCard, type Location } from "@/entities/location";
 import type { BlockContent } from "@/entities/page-block";
 import { getPhotos, PhotoTile, type Photo } from "@/entities/photo";
+import { getRules } from "@/entities/rules";
 import { getReviews, ReviewCard, summarise, writtenOnly } from "@/entities/review";
 import { ReviewForm } from "@/features/review-submit";
 import { getSettings } from "@/entities/settings";
@@ -249,6 +250,7 @@ export async function BookingCtaBlock({ content }: { content: BlockContent["book
             rooms={bookable}
             phoneDisplay={settings.phone_display}
             phoneHref={`tel:${settings.phone_e164}`}
+            rules={await getRules()}
           />
         </Suspense>
       </div>

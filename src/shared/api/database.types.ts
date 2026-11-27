@@ -650,6 +650,42 @@ export type Database = {
           },
         ]
       }
+      rule_sections: {
+        Row: {
+          created_at: string
+          id: string
+          intro: string | null
+          is_visible: boolean
+          items: Json
+          note: string | null
+          sort_order: number
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          intro?: string | null
+          is_visible?: boolean
+          items?: Json
+          note?: string | null
+          sort_order?: number
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          intro?: string | null
+          is_visible?: boolean
+          items?: Json
+          note?: string | null
+          sort_order?: number
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       settings: {
         Row: {
           address: string | null
@@ -821,6 +857,7 @@ export type Database = {
       room_units: { Args: { p_room_id: string }; Returns: string[] }
       save_gallery: { Args: { items: Json }; Returns: undefined }
       save_rooms: { Args: { items: Json }; Returns: undefined }
+      save_rules: { Args: { payload: Json }; Returns: undefined }
       save_settings: { Args: { payload: Json }; Returns: undefined }
       submit_review: {
         Args: { p_author?: string; p_body?: string; p_rating: number }

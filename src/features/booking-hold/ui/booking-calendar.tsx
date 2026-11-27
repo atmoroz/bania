@@ -4,6 +4,10 @@ import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { Check, Loader2, Phone } from "lucide-react";
 
+// Straight from the modules, not the slice barrel: the barrel also exports
+// the cached query, which cannot be pulled into a client bundle.
+import { RulesDialog } from "@/entities/rules/ui/rules-dialog";
+import type { RuleSection } from "@/entities/rules/model/api";
 import {
   cn,
   formatHryvnia,
@@ -77,10 +81,13 @@ export function BookingCalendar({
   rooms,
   phoneDisplay,
   phoneHref,
+  rules,
 }: {
   rooms: BookingRoom[];
   phoneDisplay: string;
   phoneHref: string;
+  /** The house rules, read beside the button that books. */
+  rules: RuleSection[];
 }) {
   // A link from a price card names its room, so the visitor lands on the one
   // they clicked rather than on whichever happens to be first.
@@ -437,6 +444,15 @@ export function BookingCalendar({
             `Мінімум ${minimumHours} год`
           )}
         </Button>
+
+        {/* Under the booking button, where it is read at the moment it
+            matters. Always shown, even on a full day: somebody choosing
+            another date still wants to know the terms. */}
+        {rules.length > 0 ? (
+          <div className="mt-3">
+            <RulesDialog sections={rules} />
+          </div>
+        ) : null}
       </div>
 
       <Dialog open={held !== null} onOpenChange={(open) => !open && setHeld(null)}>
