@@ -33,7 +33,7 @@ import {
   DialogContent,
   DialogDescription,
   DialogTitle,
-  SlotListSkeleton,
+  SlotGridSkeleton,
 } from "@/shared/ui";
 
 import {
@@ -495,8 +495,8 @@ export function BookingCalendar({
         <p className="text-muted-foreground mt-2 text-[13px]">{formatVenueDate(date.toISOString())}</p>
 
         {isLoading ? (
-          <div className="border-bronze/10 mt-5 border-y">
-            <SlotListSkeleton />
+          <div className="mt-5">
+            <SlotGridSkeleton />
           </div>
         ) : availability && !availability.open ? (
           <p className="text-muted-foreground mt-6 text-[15px]">{availability.reason}</p>

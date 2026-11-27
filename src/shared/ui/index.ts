@@ -15,7 +15,7 @@ export { LogoMark } from "./logo-mark";
 export { Eyebrow, Section, SectionHeading } from "./section";
 export { SaveBar } from "./save-bar";
 export { ScrollFade } from "./scroll-fade";
-export { Skeleton, SlotListSkeleton } from "./skeleton";
+export { Skeleton, SlotGridSkeleton, SlotListSkeleton } from "./skeleton";
 export { ServiceWorker } from "./service-worker";
 export { Reveal } from "./reveal";
 export { ThemeSwitch } from "./theme-switch";
