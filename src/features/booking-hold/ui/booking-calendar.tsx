@@ -21,7 +21,6 @@ import {
   hasRunOfFreeSlots,
   formatVenueDate,
   scrollChildToTop,
-  useMatchedHeight,
   type Slot,
 } from "@/shared/lib";
 import {
@@ -215,10 +214,12 @@ export function BookingCalendar({
 
   const listRef = useRef<HTMLUListElement>(null);
   const firstOpenRef = useRef<HTMLLIElement>(null);
-  const leftColumnRef = useRef<HTMLDivElement>(null);
-  const rightColumnRef = useRef<HTMLDivElement>(null);
 
-  useMatchedHeight(leftColumnRef, rightColumnRef);
+  // No matched height any more. It existed so the hours column ended
+  // level with the calendar while its list scrolled inside a fixed box;
+  // with the hours as a grid there is nothing to scroll, so forcing the
+  // column to the calendar's height only pushed the summary and the
+  // buttons out of it and over the card below.
 
   // The effect only fetches. Clearing the selection belongs to the actions that
   // invalidate it — changing room or day — not to a side effect of rendering.
@@ -418,7 +419,7 @@ export function BookingCalendar({
 
   return (
     <div className="grid items-stretch gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:gap-14">
-      <div ref={leftColumnRef}>
+      <div>
         <p className="label-caps text-bronze">1. Оберіть локацію</p>
         {/* A grid, not a wrapping row: content-sized buttons produced a ragged
             staircase. Equal cells make the choice read as one set of options. */}
@@ -480,9 +481,7 @@ export function BookingCalendar({
         </Card>
       </div>
 
-      {/* A column, so the list can take the slack and both columns end level
-          instead of one trailing below the other. */}
-      <div ref={rightColumnRef} className="flex min-h-0 flex-col">
+      <div className="flex flex-col">
         <p className="label-caps text-bronze">
           3. Оберіть сеанси{" "}
           {/* The figure comes from the card, not from the sentence: the
