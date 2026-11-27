@@ -56,7 +56,11 @@ export function HeroBlock({ content }: { content: BlockContent["hero"] }) {
         {stats.length > 0 ? (
           <dl className="border-bronze/15 mt-16 grid grid-cols-2 gap-px border-t pt-10 md:grid-cols-4">
             {stats.map((stat) => (
-              <div key={stat.label} className="pt-2">
+              // Centred in its column. Left-aligned, the four read as a
+              // ragged row: the last label is twice the width of its
+              // number and ran to the very edge of the page, which looked
+              // like a mistake rather than a layout.
+              <div key={stat.label} className="pt-2 text-center">
                 <dt className="font-display text-[28px] leading-9">{stat.value}</dt>
                 <dd className="text-muted-foreground mt-1 text-[13px]">{stat.label}</dd>
               </div>
