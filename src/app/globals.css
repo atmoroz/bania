@@ -456,3 +456,110 @@
     animation: logo-spark-c 2.5s ease-out infinite 1.2s;
   }
 }
+
+/* ---------------------------------------------------------------------------
+   An ember travelling the frame
+   ---------------------------------------------------------------------------
+   A single warm arc that circles the border of a card, like a coal carried
+   round the rim. One hairline wide and mostly transparent: the design has
+   no shadows and one accent colour, so the movement has to be the whole
+   effect, not a glow on top of a glow.
+
+   Built from a conic gradient in a pseudo-element, masked down to the
+   border itself: the gradient fills the padding box and the mask subtracts
+   the content box, leaving a one-pixel ring. `--ember-angle` is registered
+   as an <angle> so it can be animated at all — an unregistered custom
+   property jumps from 0 to 360 instead of sweeping.
+
+   `.ember` runs always, for the one frame that should draw the eye.
+   `.ember-hover` waits for the pointer, which is what the cards use: forty
+   rings turning at once on a page is a fairground, and a laptop fan. */
+
+@property --ember-angle {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+
+.ember,
+.ember-hover {
+  position: relative;
+}
+
+.ember::after,
+.ember-hover::after {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  padding: 1px;
+  pointer-events: none;
+  background: conic-gradient(
+    from var(--ember-angle),
+    transparent 0deg,
+    transparent 268deg,
+    color-mix(in oklab, var(--bronze) 55%, transparent) 300deg,
+    var(--bronze) 330deg,
+    color-mix(in oklab, var(--bronze) 55%, transparent) 352deg,
+    transparent 360deg
+  );
+  /* Longhands, not the `mask` shorthand: Chrome aliases `mask` and
+     `-webkit-mask` to each other, so a shorthand written after the other
+     silently resets the compositing and the gradient floods the whole
+     card instead of its border — which is exactly what happened. */
+  mask-image: linear-gradient(#000 0 0), linear-gradient(#000 0 0);
+  mask-clip: content-box, border-box;
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity 0.45s ease;
+}
+
+.ember-hover:hover::after,
+.ember-hover:focus-within::after {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes ember-travel {
+    to {
+      --ember-angle: 360deg;
+    }
+  }
+
+  .ember::after {
+    opacity: 1;
+    animation: ember-travel 7s linear infinite;
+  }
+
+  .ember-hover::after {
+    animation: ember-travel 4.5s linear infinite;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Arriving on scroll
+   ---------------------------------------------------------------------------
+   Sections lift into place as they come into view. The hidden state is
+   keyed to `data-js` on <html>, set by a one-line script before the first
+   paint: without it a visitor with no JavaScript would be left looking at
+   an empty page, and with it there is no flash of content being hidden
+   again. Anybody who asks for less motion gets everything, immediately. */
+
+[data-js="1"] .reveal {
+  opacity: 0;
+  transform: translateY(14px);
+}
+
+[data-js="1"] .reveal[data-shown="true"] {
+  opacity: 1;
+  transform: none;
+  transition:
+    opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-js="1"] .reveal {
+    opacity: 1;
+    transform: none;
+  }
+}

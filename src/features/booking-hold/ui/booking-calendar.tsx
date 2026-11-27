@@ -321,7 +321,9 @@ export function BookingCalendar({
         </div>
 
         <p className="label-caps text-bronze mt-10">2. Оберіть день</p>
-        <Card className="mt-4 p-5">
+        {/* The one frame on the page that keeps its ember turning: the
+            calendar is the thing this page exists for. */}
+        <Card ember="always" className="mt-4 p-5">
           {/* Full days stay clickable. Disabling them would hide why they are
               unavailable, and the visitor is owed the reason. */}
           <Calendar

@@ -60,6 +60,14 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="uk"
       className={`${playfair.variable} ${manrope.variable} h-full antialiased`}
     >
+      <head>
+        {/* Before the first paint: the scroll-reveal styles only hide
+            anything once this has run, so a visitor without JavaScript
+            reads the whole page instead of blank sections. */}
+        <script
+          dangerouslySetInnerHTML={{ __html: `document.documentElement.dataset.js="1"` }}
+        />
+      </head>
       <body className="bg-background text-foreground flex min-h-full flex-col font-sans">
         {children}
       </body>

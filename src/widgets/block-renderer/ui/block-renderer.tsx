@@ -12,6 +12,8 @@ import {
   ReviewsBlock,
   RichTextBlock,
 } from "./content-blocks";
+import { Reveal } from "@/shared/ui";
+
 import { FeatureGridBlock } from "./feature-grid-block";
 import { HeroBlock } from "./hero-block";
 
@@ -64,9 +66,16 @@ function renderBlock(block: Block, staged: Staged) {
 export function BlockRenderer({ blocks, staged = {} }: { blocks: Block[]; staged?: Staged }) {
   return (
     <>
-      {blocks.map((block) => (
-        <div key={block.id}>{renderBlock(block, staged)}</div>
-      ))}
+      {blocks.map((block, index) =>
+        // The first block is the one already on screen when the page
+        // opens; fading it in would mean the site begins by hiding
+        // itself. Everything below arrives as it is scrolled to.
+        index === 0 ? (
+          <div key={block.id}>{renderBlock(block, staged)}</div>
+        ) : (
+          <Reveal key={block.id}>{renderBlock(block, staged)}</Reveal>
+        ),
+      )}
     </>
   );
 }
