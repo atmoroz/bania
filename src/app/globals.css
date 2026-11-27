@@ -492,13 +492,9 @@
   isolation: isolate;
 }
 
-/* Two layers of the same arc: ::after is the line itself, ::before the
-   same thing blurred, which is what makes it read as a coal rather than
-   a hairline somebody forgot to delete. The first version was one
-   unblurred pixel at half strength and was, fairly, not noticed at all. */
-.ember::before,
+/* One layer: the line itself. A blurred second layer behind it was tried
+   and rejected — the halo read as a shadow, and this design has none. */
 .ember::after,
-.ember-hover::before,
 .ember-hover::after {
   content: "";
   position: absolute;
@@ -508,11 +504,11 @@
   background: conic-gradient(
     from var(--ember-angle),
     transparent 0deg,
-    transparent 205deg,
-    color-mix(in oklab, var(--bronze) 30%, transparent) 250deg,
-    color-mix(in oklab, var(--bronze) 90%, transparent) 300deg,
-    #ffe9cd 327deg,
-    color-mix(in oklab, var(--bronze) 90%, transparent) 347deg,
+    transparent 215deg,
+    color-mix(in oklab, var(--bronze) 25%, transparent) 262deg,
+    color-mix(in oklab, var(--bronze) 80%, transparent) 305deg,
+    var(--bronze) 330deg,
+    color-mix(in oklab, var(--bronze) 80%, transparent) 350deg,
     transparent 360deg
   );
   /* Longhands, not the `mask` shorthand: Chrome aliases `mask` and
@@ -527,19 +523,7 @@
   transition: opacity 0.45s ease;
 }
 
-/* The halo: wider and soft, so a one-pixel line still reads on a dark
-   card without becoming a tube of light. */
-.ember::before,
-.ember-hover::before {
-  inset: -5px;
-  padding: 5px;
-  z-index: 2;
-  filter: blur(8px);
-}
-
-.ember-hover:hover::before,
 .ember-hover:hover::after,
-.ember-hover:focus-within::before,
 .ember-hover:focus-within::after {
   opacity: 1;
 }
@@ -551,37 +535,27 @@
     }
   }
 
-  .ember::before,
   .ember::after {
     opacity: 1;
-    animation: ember-travel 4.5s linear infinite;
+    animation: ember-travel 5s linear infinite;
   }
 
-  .ember::before {
-    opacity: 0.55;
-  }
-
-  .ember-hover::before,
   .ember-hover::after {
-    animation: ember-travel 3.2s linear infinite;
+    animation: ember-travel 3.4s linear infinite;
   }
 
   /* Out of step with each other, and written after the animations rather
      than before: the `animation` shorthand resets the delay, so these
      rules did nothing where they first stood and every card's ember
      reached the same corner at the same moment. */
-  .ember:nth-child(2n)::before,
   .ember:nth-child(2n)::after,
-  *:nth-child(2n) > .ember::before,
   *:nth-child(2n) > .ember::after {
-    animation-delay: -1.5s;
+    animation-delay: -1.7s;
   }
 
-  .ember:nth-child(3n)::before,
   .ember:nth-child(3n)::after,
-  *:nth-child(3n) > .ember::before,
   *:nth-child(3n) > .ember::after {
-    animation-delay: -3s;
+    animation-delay: -3.4s;
   }
 }
 
