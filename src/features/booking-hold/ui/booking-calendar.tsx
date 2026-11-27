@@ -6,7 +6,7 @@ import { Check, Loader2, Phone } from "lucide-react";
 
 // Straight from the modules, not the slice barrel: the barrel also exports
 // the cached query, which cannot be pulled into a client bundle.
-import { RulesDialog } from "@/entities/rules/ui/rules-dialog";
+import { IncludedDialog, RulesDialog } from "@/entities/rules/ui/rules-dialog";
 import type { RuleSection } from "@/entities/rules/model/api";
 import {
   cn,
@@ -82,12 +82,15 @@ export function BookingCalendar({
   phoneDisplay,
   phoneHref,
   rules,
+  included,
 }: {
   rooms: BookingRoom[];
   phoneDisplay: string;
   phoneHref: string;
   /** The house rules, read beside the button that books. */
   rules: RuleSection[];
+  /** What the hour includes, behind the info icon next to them. */
+  included: RuleSection[];
 }) {
   // A link from a price card names its room, so the visitor lands on the one
   // they clicked rather than on whichever happens to be first.
@@ -448,9 +451,10 @@ export function BookingCalendar({
         {/* Under the booking button, where it is read at the moment it
             matters. Always shown, even on a full day: somebody choosing
             another date still wants to know the terms. */}
-        {rules.length > 0 ? (
-          <div className="mt-3">
+        {rules.length > 0 || included.length > 0 ? (
+          <div className="mt-3 flex items-stretch gap-3">
             <RulesDialog sections={rules} />
+            <IncludedDialog sections={included} />
           </div>
         ) : null}
       </div>

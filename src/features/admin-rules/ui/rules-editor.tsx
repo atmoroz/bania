@@ -3,13 +3,26 @@
 import { useState, useTransition } from "react";
 import { ChevronDown, ChevronUp, Eye, EyeOff, Plus, Trash2 } from "lucide-react";
 
-import type { RuleItem } from "@/entities/rules/model/api";
+import type { RuleItem, RuleKind } from "@/entities/rules/model/api";
 import { cn } from "@/shared/lib";
 import { Button, SaveBar, TextField } from "@/shared/ui";
 
 import { getAdminRules, saveRules, type AdminRuleSection } from "../model/actions";
 
 type Section = AdminRuleSection & { key: string };
+
+const GROUPS: { kind: RuleKind; title: string; hint: string }[] = [
+  {
+    kind: "rules",
+    title: "Правила",
+    hint: "Вікно «Ознайомитись з правилами» під кнопкою бронювання.",
+  },
+  {
+    kind: "included",
+    title: "Що входить до бронювання",
+    hint: "Вікно за значком «і» поруч із правилами: що вже у вартості години і що взяти з собою.",
+  },
+];
 
 const withKeys = (sections: AdminRuleSection[]): Section[] =>
   sections.map((s, i) => ({ ...s, key: s.id ?? `new-${i}` }));
@@ -32,14 +45,29 @@ export function RulesEditor({ initial }: { initial: AdminRuleSection[] }) {
   const patch = (key: string, change: Partial<Section>) =>
     setSections(sections.map((s) => (s.key === key ? { ...s, ...change } : s)));
 
-  function move(index: number, direction: "up" | "down") {
-    const to = direction === "up" ? index - 1 : index + 1;
-    if (to < 0 || to >= sections.length) return;
-    const next = [...sections];
-    const [item] = next.splice(index, 1);
+  /**
+   * Moves a section within its own group. The two groups share one array,
+   * so a move is computed among the neighbours of the same kind and then
+   * written back into the whole list; the server numbers them in the order
+   * it receives.
+   */
+  function move(key: string, direction: "up" | "down") {
+    const group = sections.filter((s) => s.kind === getKind(key));
+    const from = group.findIndex((s) => s.key === key);
+    const to = direction === "up" ? from - 1 : from + 1;
+    if (from < 0 || to < 0 || to >= group.length) return;
+
+    const reordered = [...group];
+    const [item] = reordered.splice(from, 1);
     if (!item) return;
-    next.splice(to, 0, item);
-    setSections(next);
+    reordered.splice(to, 0, item);
+
+    const queue = [...reordered];
+    setSections(sections.map((s) => (s.kind === item.kind ? queue.shift()! : s)));
+  }
+
+  function getKind(key: string): RuleKind {
+    return sections.find((s) => s.key === key)?.kind ?? "rules";
   }
 
   function save() {
@@ -66,42 +94,58 @@ export function RulesEditor({ initial }: { initial: AdminRuleSection[] }) {
     <>
       {error ? <p className="text-destructive mt-8 text-[15px]">{error}</p> : null}
 
-      <ul className="mt-8 flex flex-col gap-4">
-        {sections.map((section, index) => (
-          <SectionEditor
-            key={section.key}
-            section={section}
-            index={index}
-            total={sections.length}
-            onChange={(change) => patch(section.key, change)}
-            onMove={(direction) => move(index, direction)}
-            onRemove={() => setSections(sections.filter((s) => s.key !== section.key))}
-          />
-        ))}
-      </ul>
+      {GROUPS.map((group) => {
+        const own = sections.filter((s) => s.kind === group.kind);
+        return (
+          <section key={group.kind} className="mt-12">
+            <h2 className="font-display text-[22px] leading-7">{group.title}</h2>
+            <p className="text-muted-foreground mt-2 max-w-[620px] text-[13px] leading-5">
+              {group.hint}
+            </p>
 
-      <Button
-        type="button"
-        variant="ghost"
-        className="mt-6"
-        onClick={() =>
-          setSections([
-            ...sections,
-            {
-              key: `new-${crypto.randomUUID()}`,
-              id: null,
-              title: "",
-              intro: "",
-              items: [],
-              note: "",
-              isVisible: true,
-            },
-          ])
-        }
-      >
-        <Plus className="size-4" aria-hidden />
-        Додати секцію
-      </Button>
+            <ul className="mt-6 flex flex-col gap-4">
+              {own.map((section, index) => (
+                <SectionEditor
+                  key={section.key}
+                  section={section}
+                  index={index}
+                  total={own.length}
+                  onChange={(change) => patch(section.key, change)}
+                  onMove={(direction) => move(section.key, direction)}
+                  onRemove={() => setSections(sections.filter((s) => s.key !== section.key))}
+                />
+              ))}
+              {own.length === 0 ? (
+                <li className="text-muted-foreground/70 text-[13px]">Поки порожньо.</li>
+              ) : null}
+            </ul>
+
+            <Button
+              type="button"
+              variant="ghost"
+              className="mt-6"
+              onClick={() =>
+                setSections([
+                  ...sections,
+                  {
+                    key: `new-${crypto.randomUUID()}`,
+                    id: null,
+                    kind: group.kind,
+                    title: "",
+                    intro: "",
+                    items: [],
+                    note: "",
+                    isVisible: true,
+                  },
+                ])
+              }
+            >
+              <Plus className="size-4" aria-hidden />
+              Додати секцію
+            </Button>
+          </section>
+        );
+      })}
 
       <SaveBar
         status={dirty ? "Є незбережені зміни. На сайті їх ще не видно." : "Усе збережено."}

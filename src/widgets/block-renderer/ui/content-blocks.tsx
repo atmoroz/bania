@@ -250,7 +250,8 @@ export async function BookingCtaBlock({ content }: { content: BlockContent["book
             rooms={bookable}
             phoneDisplay={settings.phone_display}
             phoneHref={`tel:${settings.phone_e164}`}
-            rules={await getRules()}
+            rules={await getRules("rules")}
+            included={await getRules("included")}
           />
         </Suspense>
       </div>

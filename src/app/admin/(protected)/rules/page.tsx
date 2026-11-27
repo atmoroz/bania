@@ -11,9 +11,9 @@ export default function Page() {
       <p className="label-caps text-bronze">Адмінпанель</p>
       <h1 className="font-display mt-3 text-[34px] leading-tight md:text-[44px]">Правила</h1>
       <p className="text-muted-foreground mt-4 max-w-[640px] text-[15px] leading-6">
-        Те, що гість бачить у вікні «Ознайомитись з правилами» під кнопкою бронювання.
-        Секції показуються в цьому порядку; приховані лишаються тут, але на сайті їх
-        немає.
+        Два вікна під кнопкою бронювання: правила та «що входить». Секції
+        показуються в тому порядку, в якому стоять тут; приховані лишаються в
+        панелі, але на сайті їх немає.
       </p>
 
       <Suspense fallback={<p className="text-muted-foreground mt-10 text-[15px]">Завантаження…</p>}>

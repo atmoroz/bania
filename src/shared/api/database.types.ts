@@ -657,6 +657,7 @@ export type Database = {
           intro: string | null
           is_visible: boolean
           items: Json
+          kind: string
           note: string | null
           sort_order: number
           title: string
@@ -668,6 +669,7 @@ export type Database = {
           intro?: string | null
           is_visible?: boolean
           items?: Json
+          kind?: string
           note?: string | null
           sort_order?: number
           title: string
@@ -679,6 +681,7 @@ export type Database = {
           intro?: string | null
           is_visible?: boolean
           items?: Json
+          kind?: string
           note?: string | null
           sort_order?: number
           title?: string

@@ -2,11 +2,13 @@
 
 import { updateTag } from "next/cache";
 
-import type { RuleItem } from "@/entities/rules/model/api";
+import type { RuleItem, RuleKind } from "@/entities/rules/model/api";
 import { CONTENT_TAG, createSupabaseServerClient, getAdmin } from "@/shared/api";
 
 export type AdminRuleSection = {
   id: string | null;
+  /** Which dialog it appears in: the rules, or what a booking includes. */
+  kind: RuleKind;
   title: string;
   intro: string;
   items: RuleItem[];
@@ -28,13 +30,15 @@ export async function getAdminRules(): Promise<AdminRuleSection[]> {
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase
     .from("rule_sections")
-    .select("id, title, intro, items, note, is_visible")
+    .select("id, kind, title, intro, items, note, is_visible")
+    .order("kind")
     .order("sort_order");
 
   if (error) throw new Error(`Failed to load the rules: ${error.message}`);
 
   return (data ?? []).map((s) => ({
     id: s.id,
+    kind: s.kind === "included" ? ("included" as const) : ("rules" as const),
     title: s.title,
     intro: s.intro ?? "",
     // Read defensively: the column is jsonb, and a shape the editor cannot
@@ -64,6 +68,7 @@ export async function saveRules(sections: AdminRuleSection[]): Promise<RulesResu
   const { error } = await supabase.rpc("save_rules", {
     payload: sections.map((s) => ({
       id: s.id,
+      kind: s.kind,
       title: s.title,
       intro: s.intro,
       note: s.note,

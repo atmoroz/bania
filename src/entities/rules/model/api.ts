@@ -11,6 +11,9 @@ export const ruleItem = z.object({
 
 export type RuleItem = z.infer<typeof ruleItem>;
 
+/** Sections come in two lists: the terms, and what the price includes. */
+export type RuleKind = "rules" | "included";
+
 export type RuleSection = {
   id: string;
   title: string;
@@ -20,13 +23,13 @@ export type RuleSection = {
 };
 
 /**
- * The house rules, in the owner's order.
+ * One of the two lists, in the owner's order.
  *
  * `items` is jsonb, so it is parsed rather than trusted: a section whose
  * list cannot be read shows its title and note and skips the list, which
  * is better than a dialog that throws.
  */
-export async function getRules(): Promise<RuleSection[]> {
+export async function getRules(kind: RuleKind = "rules"): Promise<RuleSection[]> {
   "use cache";
   cacheTag(CONTENT_TAG);
   cacheLife("hours");
@@ -35,6 +38,7 @@ export async function getRules(): Promise<RuleSection[]> {
   const { data, error } = await supabase
     .from("rule_sections")
     .select("id, title, intro, items, note")
+    .eq("kind", kind)
     .order("sort_order");
 
   if (error) throw new Error(`Failed to load the rules: ${error.message}`);
